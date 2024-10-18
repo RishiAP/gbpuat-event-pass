@@ -14,7 +14,7 @@ export const verifiersSlice = createSlice({
   initialState,
   reducers: {
     setVerifiers:(state,action:PayloadAction<Verifier[]>)=>{
-        state.value = action.payload;
+        state.value = Array.from(action.payload).sort((a:Verifier,b:Verifier)=>(a.name.localeCompare(b.name)));
     }
   },
 })

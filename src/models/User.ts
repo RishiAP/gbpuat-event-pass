@@ -4,7 +4,13 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
     email: string;
     name: string;
-    events: Map<Schema.Types.ObjectId, { status: boolean; verifier: Schema.Types.ObjectId }>;  // Verifier as ObjectId
+    aadhar: string;
+    college_id: number|null;
+    designation: string|null;
+    department: Schema.Types.ObjectId|null;
+    college: Schema.Types.ObjectId|null;
+    photo: string|null;
+    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string|null; verifier: Schema.Types.ObjectId }>;  // Verifier as ObjectId
 }
 
 // User Schema Definition
@@ -18,6 +24,36 @@ const UserSchema = new Schema<IUser>({
         type: String,
         required: true,
     },
+    aadhar: {
+        type: String,
+        required: true,
+    },
+    college_id: {
+        type: Number,
+        required: false,
+        default: null,
+    },
+    designation: {
+        type: String,
+        required: false,
+        default: null,
+    },
+    department: {
+        type: Schema.Types.ObjectId,
+        ref: 'Department',
+        required: false,
+        default: null,
+    },
+    college: {
+        type: Schema.Types.ObjectId,
+        ref: 'College',
+        required: false,
+        default: null,
+    },
+    photo: {
+        type: String,
+        required: true
+    },
     events: {
         type: Map,
         of: new Schema({
@@ -26,6 +62,15 @@ const UserSchema = new Schema<IUser>({
                 required: true,
                 default: false,  // Default status is false (not participating)
             },
+            seat_no: {
+                type: String,
+                required: true,
+            },
+            enclosure_no: {
+                type: String,
+                required: false,
+                default: null,
+            },
             verifier: {
                 type: Schema.Types.ObjectId,  // Reference to Verifier model (as ObjectId)
                 ref: 'Verifier',  // Specify that verifier refers to the Verifier model
@@ -33,7 +78,7 @@ const UserSchema = new Schema<IUser>({
             },
         }),
         default: {},
-    },
+    }
 }, { timestamps: true });
 
 // Export User Model

@@ -3,6 +3,7 @@ import ReduxProvider from "@/components/ReduxProvider";
 import { connect } from "@/config/database/mongoDBConfig";
 import { Event } from "@/models/Event";
 import { Verifier } from "@/models/Verifier";
+import { create } from "domain";
 import type { Metadata } from "next";
 connect();
 
@@ -17,10 +18,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  const events=await Event.find();
-  const verifiers=await Verifier.find();
-  console.log(events,verifiers);
-
+  const events=JSON.parse(JSON.stringify(await Event.find()));
+  const verifiers=JSON.parse(JSON.stringify(await Verifier.find()));
+  
   return (
     <ReduxProvider>
     {children}

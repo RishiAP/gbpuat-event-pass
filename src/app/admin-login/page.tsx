@@ -5,8 +5,7 @@ import { Card, Label, TextInput, Button, Checkbox } from 'flowbite-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineLoading } from 'react-icons/ai';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/ReactToastify.min.css';
+import { toast } from 'react-toastify';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -107,7 +106,6 @@ export default function SignInPage() {
           </Button>
         </form>
       </Card>
-      <ToastContainer draggable draggablePercent={60} position='top-center' />
     </div>
   );
 }

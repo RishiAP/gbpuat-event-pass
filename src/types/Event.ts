@@ -4,6 +4,9 @@ export default interface Event {
     date: Date;
     location: string;
     status: string;
+    attended: number;
     participants: number;
     _id:string;
+    createdAt:Date;
+    updatedAt:Date;
 }

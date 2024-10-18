@@ -7,12 +7,15 @@ export interface IEvent extends Document{
     location: string;
     status: string;
     participants: number;
+    attended: number;
+    email_sent: boolean;
 }
 
 const EventSchema=new Schema<IEvent>({
     title:{
         type: String,
-        required: true
+        required: true,
+        unique:true
     },
     description:{
         type: String,
@@ -34,6 +37,16 @@ const EventSchema=new Schema<IEvent>({
         type: Number,
         required: true,
         default:0
+    },
+    attended:{
+        type: Number,
+        required: true,
+        default:0
+    },
+    email_sent:{
+        type: Boolean,
+        required: true,
+        default:false
     }
 },{timestamps: true});
 

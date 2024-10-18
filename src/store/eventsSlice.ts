@@ -14,7 +14,7 @@ export const eventsSlice = createSlice({
   initialState,
   reducers: {
     setEvents:(state,action:PayloadAction<Event[]>)=>{
-        state.value = action.payload;
+        state.value = Array.from(action.payload).sort((a:Event,b:Event)=>(new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
   },
 })

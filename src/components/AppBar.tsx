@@ -2,9 +2,12 @@
 "use client";
 
 import { Avatar, Dropdown, Navbar } from "flowbite-react";
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/ReactToastify.min.css';
 
 const AppBar=()=> {
   return (
+    <>
     <Navbar fluid rounded>
       <Navbar.Brand href="https://flowbite-react.com">
         <img src="/favicon.ico" className="mr-3 h-6 sm:h-9" alt="Flowbite React Logo" />
@@ -40,6 +43,8 @@ const AppBar=()=> {
         <Navbar.Link href="#">Contact</Navbar.Link>
       </Navbar.Collapse>
     </Navbar>
+    <ToastContainer draggable draggablePercent={60} position='top-center' />
+    </>
   );
 }
 

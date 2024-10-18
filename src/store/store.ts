@@ -1,11 +1,13 @@
 import { configureStore, current } from '@reduxjs/toolkit'
 import eventsSlice from './eventsSlice'
 import verifiersSlice from './verifiersSlice'
+import fileUploadModalSlice from './fileUploadModalSlice'
 
 export const store = configureStore({
   reducer: {
     events:eventsSlice,
-    verifiers:verifiersSlice
+    verifiers:verifiersSlice,
+    fileUploadModal:fileUploadModalSlice
   },
 })
 
