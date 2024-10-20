@@ -188,16 +188,23 @@ export async function POST(req: NextRequest) {
             await User.findOneAndUpdate(
                 { email: user.email },
                 {
-                    $setOnInsert: { email: user.email, aadhar: user.aadhar },
-                    $set: {
+                    $setOnInsert: { email: user.email,[`events.${event_id}.emails_sent`]:[] },
+                    $set: {...{
                         name: user.name,
                         department: user.department,
                         college: user.college,
                         photo: user.photo,
-                        college_id: user.college_id,
+                        aadhar: user.aadhar,
                         designation: user.designation,
-                        [`events.${event_id}`]: { status: false, seat_no: user.seat_no, enclosure_no: user.enclosure_no, verifier: user.verifier }
-                    }
+                        [`events.${event_id}.status`]: false,
+                        [`events.${event_id}.seat_no`]: user.seat_no,
+                        [`events.${event_id}.enclosure_no`]: user.enclosure_no,
+                        [`events.${event_id}.verifier`]: user.verifier
+                    },
+                    ...(user.college_id!=null && typeof user.college_id=="number"?{
+                        college_id: user.college_id
+                    }:{})
+                }
                 },
                 {
                     session,

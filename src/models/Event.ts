@@ -8,7 +8,7 @@ export interface IEvent extends Document{
     status: string;
     participants: number;
     attended: number;
-    email_sent: boolean;
+    emails_sent: number;
 }
 
 const EventSchema=new Schema<IEvent>({
@@ -43,10 +43,10 @@ const EventSchema=new Schema<IEvent>({
         required: true,
         default:0
     },
-    email_sent:{
-        type: Boolean,
+    emails_sent:{
+        type: Number,
         required: true,
-        default:false
+        default:0
     }
 },{timestamps: true});
 

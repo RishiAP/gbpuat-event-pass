@@ -9,4 +9,5 @@ export default interface Event {
     _id:string;
     createdAt:Date;
     updatedAt:Date;
+    emails_sent: number;
 }

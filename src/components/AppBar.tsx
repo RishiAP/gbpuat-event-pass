@@ -1,11 +1,25 @@
 
 "use client";
 
+import axios from "axios";
 import { Avatar, Dropdown, Navbar } from "flowbite-react";
-import { ToastContainer } from "react-toastify";
+import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/ReactToastify.min.css';
 
 const AppBar=()=> {
+  const router=useRouter();
+  function handleLogout(){
+    const id=toast.loading('Logging out...');
+    axios.get('/api/logout').then(res=>{
+      console.log(res.data);
+      window.location.pathname=window.location.pathname=="/admin"?'/admin-login':'/verifier-login';
+      toast.update(id,{render:'Logged out successfully',type:'success',autoClose:3000,theme:document.querySelector('html')?.classList.contains('dark-mode')?'dark':'light',isLoading:false});
+    }).catch(err=>{
+      console.error(err);
+      toast.update(id,{render:'Failed to logout',type:'error',autoClose:2000,theme:document.querySelector('html')?.classList.contains('dark-mode')?'dark':'light',isLoading:false});
+    });
+  }
   return (
     <>
     <Navbar fluid rounded>
@@ -29,7 +43,7 @@ const AppBar=()=> {
           <Dropdown.Item>Settings</Dropdown.Item>
           <Dropdown.Item>Earnings</Dropdown.Item>
           <Dropdown.Divider />
-          <Dropdown.Item>Sign out</Dropdown.Item>
+          <Dropdown.Item onClick={handleLogout}>Sign out</Dropdown.Item>
         </Dropdown>
         <Navbar.Toggle />
       </div>
