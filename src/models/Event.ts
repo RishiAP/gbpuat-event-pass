@@ -8,7 +8,8 @@ export interface IEvent extends Document{
     status: string;
     participants: number;
     attended: number;
-    email_sent: boolean;
+    emails_sent: number;
+    verifiers: {verifier:Schema.Types.ObjectId,no_of_users:number}[];
 }
 
 const EventSchema=new Schema<IEvent>({
@@ -25,6 +26,17 @@ const EventSchema=new Schema<IEvent>({
         type: Date,
         required: true
     },
+    verifiers:[{
+        verifier:{
+            type: Schema.Types.ObjectId,
+            ref: 'Verifier',
+            required: true
+        },
+        no_of_users:{
+            type: Number,
+            required: true
+        }
+    }],
     location:{
         type: String,
         required: true
@@ -43,10 +55,10 @@ const EventSchema=new Schema<IEvent>({
         required: true,
         default:0
     },
-    email_sent:{
-        type: Boolean,
+    emails_sent:{
+        type: Number,
         required: true,
-        default:false
+        default:0
     }
 },{timestamps: true});
 

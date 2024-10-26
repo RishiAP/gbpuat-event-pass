@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
         verifiers.forEach((ver: Gate) => {
             verifierMap.set(ver.name.toLowerCase(), ver._id);
         });
+        const eventVerifiers:Map<string,number>=new Map<string,number>();
 
         const headers = rows[0];
         const data = rows.slice(1).map((row: any[]) => {
@@ -108,10 +109,10 @@ export async function POST(req: NextRequest) {
             headers.forEach((header: keyof typeof headerToObject, i: number) => {
                 rowData[headerToObject[header]] = row[i] || null;
 
-                if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "entry gate" || header === "seat no." || header==="photo")) {
+                if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "entry gate" || header === "seat no." || header==="photo" || header==="enclosure no.")) {
                     throw new Error(`Invalid ${header} at row ${rows.indexOf(row) + 1}`);
                 }
-                if(headerToObject[header] === "seat_no" || headerToObject[header] === "email")
+                if(headerToObject[header] === "seat_no" || headerToObject[header] === "email" || headerToObject[header] === "enclosure_no")
                     rowData[headerToObject[header]] = row[i].toString().trim();
 
                 if (headerToObject[header] === "department" && rowData[headerToObject[header]] != null) {
@@ -185,19 +186,27 @@ export async function POST(req: NextRequest) {
         const no_of_users:number= new Set<string>(allSeatNumbers.map((user: UserEvent) => user.email)).size;
 
         for (const user of data) {
+            eventVerifiers.set(user.verifier, (eventVerifiers.get(user.verifier)||0)+1);
             await User.findOneAndUpdate(
                 { email: user.email },
                 {
-                    $setOnInsert: { email: user.email, aadhar: user.aadhar },
-                    $set: {
+                    $setOnInsert: { email: user.email,[`events.${event_id}.emails_sent`]:[] },
+                    $set: {...{
                         name: user.name,
                         department: user.department,
                         college: user.college,
                         photo: user.photo,
-                        college_id: user.college_id,
+                        aadhar: user.aadhar,
                         designation: user.designation,
-                        [`events.${event_id}`]: { status: false, seat_no: user.seat_no, enclosure_no: user.enclosure_no, verifier: user.verifier }
-                    }
+                        [`events.${event_id}.status`]: false,
+                        [`events.${event_id}.seat_no`]: user.seat_no,
+                        [`events.${event_id}.enclosure_no`]: user.enclosure_no,
+                        [`events.${event_id}.verifier`]: user.verifier
+                    },
+                    ...(user.college_id!=null && typeof user.college_id=="number"?{
+                        college_id: user.college_id
+                    }:{})
+                }
                 },
                 {
                     session,
@@ -206,7 +215,9 @@ export async function POST(req: NextRequest) {
                 }
             );
         }
-        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants:no_of_users }, { session,new:true });
+        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants:no_of_users,
+            verifiers: Array.from(eventVerifiers.entries()).map(([key,value])=>({verifier:key,no_of_users:value}))
+        }, { session,new:true });
 
         await session.commitTransaction();
         return NextResponse.json({ success: true, message: "Users' data recorded successfully.", event:updatedEvent}, { status: 200 });

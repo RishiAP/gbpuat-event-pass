@@ -2,7 +2,7 @@
 
 import Verifier from "@/types/Verifier";
 import { Button, FloatingLabel, Modal } from "flowbite-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,6 +26,10 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
     password: "",
   };
 
+  useEffect(() => {
+    if (verifier) setFormData({ name: verifier.name, username: verifier.username });
+  },[verifier]);
+
   const [formData, setFormData] = useState<Partial<Verifier>>(initialVerifier);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
@@ -36,14 +40,21 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
 
     axios({
       method: verifier ? "PUT" : "POST",
-      url: verifier ? `/api/admin/${verifier._id}` : "/api/admin",
-      data: { ...formData, type: "verifier" }
+      url: "/api/admin",
+      data: verifier?{ ...formData, type: "verifier", _id: verifier._id }:{ ...formData, type: "verifier" },
     }).then((res) => {
       onClose();
-      dispatch(setVerifiers([...verifiers, { name: formData.name, username: formData.username, _id: res.data._id }]));
+      if(verifier)
+        onVerifierUpdated({ ...verifier, ...formData });
+      else
+        dispatch(setVerifiers([...verifiers, { name: formData.name, username: formData.username, _id: res.data._id }]));
       setFormData(initialVerifier);
       toast.success(`Verifier ${verifier ? "updated" : "added"} successfully`, { theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light" });
     }).catch((err) => {
+      if(verifier)
+        toast.error(`Failed to update verifier: ${err.response.data.message}`);
+      else
+        toast.error(`Failed to add verifier: ${err.response.data.message}`);
       console.error(err);
     }).finally(() => setLoading(false));
   };

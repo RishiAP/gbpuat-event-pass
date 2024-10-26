@@ -7,7 +7,7 @@ export async function getUserFromHeader(req: NextRequest,isAdmin:boolean=false):
     const cookies = parse(req.headers.get('cookie') || '');
     if (cookies.jwtAccessToken && cookies.jwtAccessToken.length > 0) {
         try {
-            const secret = new TextEncoder().encode(isAdmin?process.env.JWT_ADMIN_SECRET:process.env.JWT_VALIDATOR_SECRET);
+            const secret = new TextEncoder().encode(isAdmin?process.env.JWT_ADMIN_SECRET:process.env.JWT_VERIFIER_SECRET);
             const verify=await jwtVerify(cookies.jwtAccessToken, secret);
             return verify.payload;
         } catch (err) {

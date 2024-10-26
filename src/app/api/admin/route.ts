@@ -55,3 +55,45 @@ export async function POST(req:NextRequest){
         return NextResponse.json({error},{status:500});
     }
 }
+
+export async function PUT(req:NextRequest){
+    try{
+        let admin=await getUserFromHeader(req,true);
+        if(admin==null){
+            return NextResponse.json({error:"Unauthorized"},{status:401});
+        }
+        const data=await req.json();
+        const {type}=data;
+        if(type=="event"){
+            const {title,description,date,location,_id}=data;
+            const event=await Event.findById(_id);
+            if(event==null){
+                return NextResponse.json({error:"Event not found"},{status:404});
+            }
+            event.title=title;
+            event.description=description;
+            event.date=date;
+            event.location=location;
+            await event.save();
+            return NextResponse.json(event,{status:200});
+        }
+        else if(type=="verifier"){
+            const {name,username,password,_id}=data;
+            const verifier=await Verifier.findById(_id);
+            if(verifier==null){
+                return NextResponse.json({error:"Verifier not found"},{status:404});
+            }
+            const encryptedPassword=jwt.sign(password,String(process.env.JWT_VERIFIER_PASSWORD_ENCRYPTION_SECRET));
+            verifier.name=name;
+            verifier.username=username;
+            verifier.password=encryptedPassword;
+            await verifier.save();
+            return NextResponse.json(verifier,{status:200});
+        }
+        return NextResponse.json({error:"Invalid request. Prop 'type' required."},{status:400});
+    }
+    catch(error){
+        console.log(error);
+        return NextResponse.json({error},{status:500});
+    }
+}

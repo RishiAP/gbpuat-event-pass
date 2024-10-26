@@ -15,11 +15,17 @@ export const eventsSlice = createSlice({
   reducers: {
     setEvents:(state,action:PayloadAction<Event[]>)=>{
         state.value = Array.from(action.payload).sort((a:Event,b:Event)=>(new Date(b.date).getTime() - new Date(a.date).getTime()));
-    }
+    },
+    increaseEmailsSent:(state,action:PayloadAction<{_id:string,increase:number}>)=>{
+        const index = state.value.findIndex(event=>event._id===action.payload._id);
+        if(index!==-1){
+            state.value[index].emails_sent+=action.payload.increase;
+        }
+    },
   },
 })
 
 // Action creators are generated for each case reducer function
-export const { setEvents } = eventsSlice.actions
+export const { setEvents,increaseEmailsSent } = eventsSlice.actions
 
 export default eventsSlice.reducer

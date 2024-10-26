@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { serialize } from "cookie";
 import { connect } from "@/config/database/mongoDBConfig";
+import { Verifier } from "@/models/Verifier";
 connect();
 
 export async function POST(req:NextRequest){
@@ -29,8 +30,8 @@ export async function POST(req:NextRequest){
             });
         }
         else if(type==="verifier"){
-            const verifier=await Admin.findOne({$or:[{email},{username:email}]});
-            if(verifier==null || !bcrypt.compareSync(password,verifier.password)){
+            const verifier=await Verifier.findOne({username:email});
+            if(verifier==null || jwt.verify(verifier.password,String(process.env.JWT_VERIFIER_PASSWORD_ENCRYPTION_SECRET))!=password){
                 return NextResponse.json({error:"Invalid credentials"},{status:401});
             }
             token=jwt.sign({_id:verifier._id,sessionToken:verifier.sessionToken},String(process.env.JWT_VERIFIER_SECRET));

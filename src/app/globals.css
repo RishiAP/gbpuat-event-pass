@@ -23,3 +23,7 @@
 :root{
     --toastify-toast-width:540px !important;
 }
+.rounded-e-none input{
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }

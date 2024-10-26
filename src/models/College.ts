@@ -6,7 +6,7 @@ export interface ICollege extends Document{
     established:number;
 }
 
-const CollegeSchema=new Schema<ICollege>({
+export const CollegeSchema=new Schema<ICollege>({
     name:{
         type: String,
         required: true,

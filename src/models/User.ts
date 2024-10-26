@@ -10,7 +10,8 @@ export interface IUser extends Document {
     department: Schema.Types.ObjectId|null;
     college: Schema.Types.ObjectId|null;
     photo: string|null;
-    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string|null; verifier: Schema.Types.ObjectId }>;  // Verifier as ObjectId
+    locked: boolean;
+    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string; emails_sent:String[], entry_time:Date, verifier: Schema.Types.ObjectId }>;  // Verifier as ObjectId
 }
 
 // User Schema Definition
@@ -30,8 +31,7 @@ const UserSchema = new Schema<IUser>({
     },
     college_id: {
         type: Number,
-        required: false,
-        default: null,
+        required: false
     },
     designation: {
         type: String,
@@ -54,6 +54,11 @@ const UserSchema = new Schema<IUser>({
         type: String,
         required: true
     },
+    locked: {
+        type: Boolean,
+        required: true,
+        default: false,
+    },
     events: {
         type: Map,
         of: new Schema({
@@ -66,10 +71,19 @@ const UserSchema = new Schema<IUser>({
                 type: String,
                 required: true,
             },
-            enclosure_no: {
-                type: String,
+            emails_sent:{
+                type: [String],
+                required: true,
+                default: [],
+            },
+            entry_time: {
+                type: Date,
                 required: false,
                 default: null,
+            },
+            enclosure_no: {
+                type: String,
+                required: true,
             },
             verifier: {
                 type: Schema.Types.ObjectId,  // Reference to Verifier model (as ObjectId)
@@ -80,6 +94,8 @@ const UserSchema = new Schema<IUser>({
         default: {},
     }
 }, { timestamps: true });
+
+UserSchema.index({ college_id: 1 }, { unique: true, partialFilterExpression: { college_id: { $ne: null } } });
 
 // Export User Model
 export const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

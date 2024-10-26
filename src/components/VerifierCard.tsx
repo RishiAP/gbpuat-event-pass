@@ -1,5 +1,5 @@
 import { Card, Button, Spinner } from "flowbite-react";
-import { FiEdit, FiUserCheck } from 'react-icons/fi';
+import { FiEdit, FiTrash, FiUserCheck } from 'react-icons/fi';
 import { FaKey, FaUserCheck } from 'react-icons/fa';
 import Verifier from "@/types/Verifier";
 import { FaCircleUser, FaEye, FaEyeSlash } from "react-icons/fa6";
@@ -31,9 +31,8 @@ export function VerifierCard({ verifier, onEdit }: VerifierCardProps) {
         <h5 className="text-lg font-bold tracking-tight text-gray-900 flex items-center">
           <FiUserCheck className="mr-2 text-blue-600" style={{whiteSpace:"break-spaces",wordBreak:"break-word"}} /> {verifier.name}
         </h5>
-        <Button size="sm" color="yellow" onClick={() => onEdit(verifier._id)} className="p-2">
-          <FiEdit className="text-lg" />
-        </Button>
+          <FiEdit className="text-lg" onClick={()=>onEdit(verifier._id)} style={{cursor:"pointer"}} />
+          <FiTrash className="text-lg" style={{cursor:"pointer"}} />
       </div>
       <div className="mb-2">
         <p className="font-normal flex gap-2 text-green-500 items-center mb-1"><span className="mr-1"><FaUserCheck/></span> <span className="text-gray-700 mt-1">{verifier.username}</span></p>

@@ -1,17 +1,32 @@
 
 "use client";
 
+import axios from "axios";
 import { Avatar, Dropdown, Navbar } from "flowbite-react";
-import { ToastContainer } from "react-toastify";
+import NEXTImage from "next/image";
+import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/ReactToastify.min.css';
 
 const AppBar=()=> {
+  const router=useRouter();
+  function handleLogout(){
+    const id=toast.loading('Logging out...');
+    axios.get('/api/logout').then(res=>{
+      console.log(res.data);
+      window.location.pathname=window.location.pathname=="/admin"?'/admin-login':'/verifier-login';
+      toast.update(id,{render:'Logged out successfully',type:'success',autoClose:3000,theme:document.querySelector('html')?.classList.contains('dark-mode')?'dark':'light',isLoading:false});
+    }).catch(err=>{
+      console.error(err);
+      toast.update(id,{render:'Failed to logout',type:'error',autoClose:2000,theme:document.querySelector('html')?.classList.contains('dark-mode')?'dark':'light',isLoading:false});
+    });
+  }
   return (
     <>
     <Navbar fluid rounded>
-      <Navbar.Brand href="https://flowbite-react.com">
-        <img src="/favicon.ico" className="mr-3 h-6 sm:h-9" alt="Flowbite React Logo" />
-        <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">Flowbite React</span>
+      <Navbar.Brand href="/">
+        <NEXTImage width={100} height={100} src="https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png" alt="GBPUAT Logo" className="mr-3 h-12 sm:h-40" style={{height:"100%", width:"auto"}} />
+        <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">GBPUAT Events</span>
       </Navbar.Brand>
       <div className="flex md:order-2">
         <Dropdown
@@ -29,7 +44,7 @@ const AppBar=()=> {
           <Dropdown.Item>Settings</Dropdown.Item>
           <Dropdown.Item>Earnings</Dropdown.Item>
           <Dropdown.Divider />
-          <Dropdown.Item>Sign out</Dropdown.Item>
+          <Dropdown.Item onClick={handleLogout}>Sign out</Dropdown.Item>
         </Dropdown>
         <Navbar.Toggle />
       </div>

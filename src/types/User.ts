@@ -1,11 +1,16 @@
+import Department from "@/types/Department";
+import College from "@/types/College";
+
 export default interface User{
     email: string;
     name: string;
     aadhar: string;
     college_id: number|null;
     designation: string|null;
-    department: string|null;
-    college: string|null;
+    department: Department|null;
+    college: College|null;
     photo: string|null;
-    events: Map<string, { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: string }>;  // Verifier as ObjectId
+    repeated: boolean;
+    same_gate: boolean;
+    events: {[key:string]: { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: {name:string} }};  // Verifier as ObjectId
 }
