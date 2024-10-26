@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setFileUploadModalEventID, setFileUploadModalStatus } from "@/store/fileUploadModalSlice";
 import { increaseEmailsSent, setEvents } from "@/store/eventsSlice";
 import { toast } from "react-toastify";
+import Link from "next/link";
 
 interface EventCardProps {
     event: Event;
@@ -74,7 +75,7 @@ export function EventCard({ event, onEdit, onUploadData }:EventCardProps) {
     <Card className="max-w-lg mt-4 shadow-lg hover:shadow-2xl transition-shadow">
       <div className="flex justify-between gap-3 items-center mb-1">
         <h5 className="text-xl font-bold tracking-tight text-gray-900 flex items-center">
-          <FiCheckCircle className="mr-2 text-green-600" /> {event.title}
+          <FiCheckCircle className="mr-2 text-green-600" /> <Link href={`/admin/${event._id}`}>{event.title}</Link>
         </h5>
         <span className={`px-3 py-1 rounded-full text-xs ${event.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {event.status}

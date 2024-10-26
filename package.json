@@ -19,6 +19,7 @@
     "bcrypt": "^5.1.1",
     "cookie": "^1.0.0",
     "flowbite-react": "^0.10.2",
+    "html5-qrcode": "^2.3.8",
     "jose": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
     "mjml": "^4.15.3",

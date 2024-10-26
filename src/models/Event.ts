@@ -9,6 +9,7 @@ export interface IEvent extends Document{
     participants: number;
     attended: number;
     emails_sent: number;
+    verifiers: {verifier:Schema.Types.ObjectId,no_of_users:number}[];
 }
 
 const EventSchema=new Schema<IEvent>({
@@ -25,6 +26,17 @@ const EventSchema=new Schema<IEvent>({
         type: Date,
         required: true
     },
+    verifiers:[{
+        verifier:{
+            type: Schema.Types.ObjectId,
+            ref: 'Verifier',
+            required: true
+        },
+        no_of_users:{
+            type: Number,
+            required: true
+        }
+    }],
     location:{
         type: String,
         required: true

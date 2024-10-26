@@ -6,7 +6,23 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import VerificationEmail from "@/templates/emails/VerificationEmail";
 import EventType from "@/types/Event";
-import UserType from "@/types/User";
+
+import { Verifier } from "@/models/Verifier";
+import Department from "@/types/Department";
+import College from "@/types/College";
+
+export default interface UserType{
+    email: string;
+    name: string;
+    aadhar: string;
+    college_id: number|null;
+    designation: string|null;
+    department: Department|null;
+    college: College|null;
+    photo: string|null;
+    repeated: boolean;
+    events: Map<string, { status: boolean; seat_no: string; enclosure_no:string; verifier: {name:string} }>;  // Verifier as ObjectId
+}
 
 type EmailSuccess = {
     email: string;
@@ -55,20 +71,26 @@ export async function POST(req: NextRequest) {
         const users = await User.find({
             [`events.${event_id}`]: { $exists: true, $ne: null },
             [`events.${event_id}.emails_sent`]: { $size: 0 }
-        }, { email: 1, _id: 0,name:1,designation:1 }).limit(3);
+        }, { email: 1, _id: 0,name:1,designation:1,events:1 }).limit(parseInt(process.env.EMAIL_LIMIT||"20"));
         let jwtAccessToken=null;
         let date:string|Date=new Date(event.date);
         const time=date.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
         date=formatDate(date);
+        const verifiers: Record<string, string> = Object.fromEntries(
+            (await Verifier.find({}, { name: 1 })).map((verifier) => [
+              verifier._id.toString(),
+              verifier.name,
+            ])
+          );          
         const emailPromises = users.map(async (user:UserType) => {
             try {
                 jwtAccessToken=jwt.sign({event:event_id,email:user.email},String(process.env.JWT_USER_QR_SECRET));
                 const messageId = await sendEmail(
-                    `"Alumni Cell GBPUAT" <${process.env.SMTP_NOREPLY}>`,
+                    `"GBPUAT - Event Verification" <${process.env.SMTP_NOREPLY}>`,
                     user.email,
-                    "Event Verification",
+                    event.title+" - Invitation",
                     `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${jwtAccessToken}`,
-                    VerificationEmail({jwtAccessToken,event,user,time,date})
+                    VerificationEmail({jwtAccessToken,event,user,time,date,verifier:verifiers[user.events.get(event_id)?.verifier.toString()||""]}),
                 );
 
                 // Record successful email sending
@@ -88,6 +110,7 @@ export async function POST(req: NextRequest) {
                 }
 
             } catch (emailError: any) {
+                console.log(emailError);
                 // Log email sending or updating errors
                 failedEmails.push({ email: user.email, error: emailError.message });
             }

@@ -1,7 +1,7 @@
+import UserType from "@/app/api/send-verification-emails/route"
 import Event from "@/types/Event"
-import User from "@/types/User"
 
-const VerificationEmail = ({jwtAccessToken,user,event,time,date}:{jwtAccessToken:string,user:User,event:Event,time:string,date:string}) => {
+const VerificationEmail = ({jwtAccessToken,user,event,time,date,verifier}:{jwtAccessToken:string,user:UserType,event:Event,time:string,date:string,verifier:string}) => {
   return (
     `<!doctype html>
 <html lang="und" dir="auto" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -239,7 +239,7 @@ const VerificationEmail = ({jwtAccessToken,user,event,time,date}:{jwtAccessToken
                           <tbody>
                             <tr>
                               <td align="left" style="font-size:0px;padding:10px;word-break:break-word;">
-                                <div style="font-family:Montserrat;font-size:16px;line-height:1;text-align:left;color:#1a1a1a;">Dear <strong>${user.designation} ${user.name}</strong>,</div>
+                                <div style="font-family:Montserrat;font-size:16px;line-height:1;text-align:left;color:#1a1a1a;">Dear <strong>${user.name}</strong>,</div>
                               </td>
                             </tr>
                             <tr>
@@ -293,7 +293,7 @@ const VerificationEmail = ({jwtAccessToken,user,event,time,date}:{jwtAccessToken
                             </tr>
                             <tr>
                               <td align="left" style="font-size:0px;padding:5px;word-break:break-word;">
-                                <div style="font-family:Montserrat;font-size:14px;line-height:1;text-align:left;color:#333333;"><strong>Gate Number:</strong> [Gate_Number]</div>
+                                <div style="font-family:Montserrat;font-size:14px;line-height:1;text-align:left;color:#333333;"><strong>Gate Number:</strong> ${verifier}</div>
                               </td>
                             </tr>
                           </tbody>

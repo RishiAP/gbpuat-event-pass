@@ -15,11 +15,13 @@ import { VerifierCard } from './VerifierCard';
 import { VerifierModal } from './CreateVerifierModal';
 import Skeleton from './Skeleton';
 import { FileUploadModal } from './FileUploadModal';
+import { toast } from 'react-toastify';
 
 const AdminPage = (props:{events:Event[],verifiers:Verifier[]}) => {
     const events:Event[]=useSelector((state:any)=>state.events.value);
     const verifiers:Verifier[]=useSelector((state:any)=>state.verifiers.value);
     const [verifierModalOpen,setVerifierModalOpen]=useState(false);
+    const [verifier,setVerifier]=useState<Verifier|undefined>(undefined);
     const [skeleton,setSkeleton]=useState(true);
     const dispatch=useDispatch();
     useEffect(()=>{
@@ -57,11 +59,14 @@ const AdminPage = (props:{events:Event[],verifiers:Verifier[]}) => {
             skeleton? Array.from({length:6}).map((_,i)=><Skeleton event={false} key={i} />):null
           }
         {
-          verifiers.map((verifier:Verifier)=><VerifierCard key={verifier._id} verifier={verifier} onEdit={()=>{}} />)
+          verifiers.map((verifier:Verifier)=><VerifierCard key={verifier._id} verifier={verifier} onEdit={()=>{setVerifierModalOpen(true); setVerifier(verifier);}} />)
         }
-        <Button className='mt-4 w-full' size='xl' color='purple' onClick={() => setVerifierModalOpen(true)}>Add Verifier</Button>
+        <Button className='mt-4 w-full' size='xl' color='purple' onClick={() => {setVerifierModalOpen(true), setVerifier(undefined)}}>Add Verifier</Button>
         </div>
-        <VerifierModal isOpen={verifierModalOpen} onClose={()=>setVerifierModalOpen(false)} onVerifierUpdated={()=>{}} />
+        <VerifierModal isOpen={verifierModalOpen} onClose={()=>setVerifierModalOpen(false)} verifier={verifier} onVerifierUpdated={(verifier:Verifier)=>{
+          dispatch(setVerifiers(verifiers.map((v:Verifier)=>v._id===verifier._id?verifier:v)));
+          setVerifierModalOpen(false);
+        }} />
           </div>
       </Tabs.Item>
     </Tabs>

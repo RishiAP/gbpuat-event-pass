@@ -1,3 +1,5 @@
+import Verifier from "./Verifier";
+
 export default interface Event {
     title: string;
     description: string;
@@ -10,4 +12,5 @@ export default interface Event {
     createdAt:Date;
     updatedAt:Date;
     emails_sent: number;
+    verifiers: {verifier:Verifier,attended:number,no_of_users:number}[];
 }
