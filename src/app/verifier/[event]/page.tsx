@@ -16,6 +16,7 @@ const EventVerifyPage = ({params}:{params:{event:string}}) => {
   const [isLoading,setIsLoading]=useState(false);
   const [user,setUser]=useState<null|User>(null);
   const [event,setEvent]=useState<null|Event>(null);
+  const [verifying, setVerifying] = useState(false);
   useEffect(() => {
     axios.get('/api/event?_id='+params.event)
     .then(res=>{
@@ -68,11 +69,11 @@ const EventVerifyPage = ({params}:{params:{event:string}}) => {
         ) : (
           <div className="flex flex-col items-center">
             {
-              isLoading?<VerifyingUserSkeleton/>:user?<UserCard user={user} event={params.event} />:null
+              isLoading?<VerifyingUserSkeleton/>:user?<UserCard user={user} event={params.event} verifying={verifying} setVerifying={setVerifying} />:null
             }
             <button
               onClick={handleRescan}
-              className="focus:outline-none text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mt-4 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
+              className="focus:outline-none text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mt-4 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800" disabled={verifying}
             >
               Rescan
             </button>

@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 import { read, utils } from 'xlsx';
 import { headerToObject } from "@/types/extras";
+import { Hostel } from "@/models/Hostel";
 
 connect();
 
@@ -20,8 +21,6 @@ interface UserEvent {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
         const user = await getUserFromHeader(req, true);
         if (user == null) {
@@ -69,11 +68,6 @@ export async function POST(req: NextRequest) {
             const sheet = workbook.Sheets[sheetName];
             rows = utils.sheet_to_json(sheet, { header: 1 });
             rows[0] = rows[0].map((header: string) => header.toString().trim().toLowerCase());
-            rows[0].forEach((header: string, i: number) => {
-                if (!expHeaders.includes(header)) {
-                    throw new Error(`Invalid header '${header}' at column ${i + 1}`);
-                }
-            });
         }
 
         if (rows.length < 2) {
@@ -99,6 +93,12 @@ export async function POST(req: NextRequest) {
         });
         const eventVerifiers:Map<string,number>=new Map<string,number>();
 
+        const hostels=await Hostel.find();
+        const hostelMap=new Map<string,string>();
+        hostels.forEach((hostel)=>{
+            hostelMap.set(hostel.name.toLowerCase(),hostel._id);
+        });
+
         const headers = rows[0];
         const data = rows.slice(1).map((row: any[]) => {
             let rowExist = false;
@@ -109,8 +109,8 @@ export async function POST(req: NextRequest) {
             headers.forEach((header: keyof typeof headerToObject, i: number) => {
                 rowData[headerToObject[header]] = row[i] || null;
 
-                if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "entry gate" || header === "seat no." || header==="photo" || header==="enclosure no.")) {
-                    throw new Error(`Invalid ${header} at row ${rows.indexOf(row) + 1}`);
+                if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "main gate" || header==="enclosure no.")) {
+                    return null;
                 }
                 if(headerToObject[header] === "seat_no" || headerToObject[header] === "email" || headerToObject[header] === "enclosure_no")
                     rowData[headerToObject[header]] = row[i].toString().trim();
@@ -134,58 +134,24 @@ export async function POST(req: NextRequest) {
                     if (verifierMap.has(verf)) {
                         rowData[headerToObject[header]] = verifierMap.get(verf);
                     } else {
-                        throw new Error(`Invalid verifier/gate '${row[i]}' at row ${rows.indexOf(row) + 1}`);
+                        return null;
+                    }
+                }else if (headerToObject[header]=="hostel" && rowData[headerToObject[header]]!=null){
+                    const hostel=row[i].toLowerCase().trim().replaceAll("&","and");
+                    if(hostelMap.has(hostel)){
+                        rowData[headerToObject[header]]=hostelMap.get(hostel);
+                    }else{
+                        throw new Error(`Invalid hostel '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
                 }
             });
             return rowData;
         }).filter((row) => row != null);
 
-        const newSeatNumbers: UserEvent[] = data.map((user: any) => ({
-            seat_no: user.seat_no || null,
-            email: user.email
-        }));
-
-        // Ensure no `null` seat numbers are passed forward
-        if (newSeatNumbers.some(user => user.seat_no == null)) {
-            throw new Error("Some users have null seat numbers. Please provide valid seat numbers.");
-        }
-
-        const existingUsers = await User.find(
-            {
-                [`events.${event_id}`]: { $exists: true }
-            },
-            {
-                email: 1,
-                events: 1,
-            }
-        ).lean();
-
-        const existingSeatNumbers: UserEvent[] = existingUsers.flatMap((user: any) => {
-            const eventDetails = user.events[event_id];
-            return eventDetails ? { seat_no: eventDetails.seat_no, email: user.email } : null;
-        }).filter((user: UserEvent | null): user is UserEvent => user?.seat_no != null);
-
-        const allSeatNumbers: UserEvent[] = [...existingSeatNumbers, ...newSeatNumbers];
-
-        const seatToEmailsMap = allSeatNumbers.reduce((acc: Record<string, Set<string>>, { seat_no, email }) => {
-            if (!seat_no) return acc;
-            if (!acc[seat_no]) {
-                acc[seat_no] = new Set();
-            }
-            acc[seat_no].add(email);
-            return acc;
-        }, {});
-
-        const duplicates = Object.keys(seatToEmailsMap).filter(seat => seatToEmailsMap[seat].size > 1);
-
-        if (duplicates.length > 0) {
-            throw new Error(`Seat numbers : ${duplicates.join(", ")} are tried to be assigned to multiple users.`);
-        }
-
-        const no_of_users:number= new Set<string>(allSeatNumbers.map((user: UserEvent) => user.email)).size;
+        const uniqueEmails = new Set<string>();
 
         for (const user of data) {
+            uniqueEmails.add(user.email);
             eventVerifiers.set(user.verifier, (eventVerifiers.get(user.verifier)||0)+1);
             await User.findOneAndUpdate(
                 { email: user.email },
@@ -193,6 +159,7 @@ export async function POST(req: NextRequest) {
                     $setOnInsert: { email: user.email,[`events.${event_id}.emails_sent`]:[] },
                     $set: {...{
                         name: user.name,
+                        hostel: user.hostel,
                         department: user.department,
                         college: user.college,
                         photo: user.photo,
@@ -209,22 +176,17 @@ export async function POST(req: NextRequest) {
                 }
                 },
                 {
-                    session,
                     upsert: true,
                     new: true
                 }
             );
         }
-        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants:no_of_users,
+        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants:uniqueEmails.size,
             verifiers: Array.from(eventVerifiers.entries()).map(([key,value])=>({verifier:key,no_of_users:value}))
-        }, { session,new:true });
+        }, { new:true });
 
-        await session.commitTransaction();
         return NextResponse.json({ success: true, message: "Users' data recorded successfully.", event:updatedEvent}, { status: 200 });
     } catch (error: any) {
-        await session.abortTransaction();
         return NextResponse.json({ error: error.message }, { status: 400 });
-    } finally {
-        session.endSession();
     }
 }

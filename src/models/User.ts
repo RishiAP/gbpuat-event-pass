@@ -9,9 +9,10 @@ export interface IUser extends Document {
     designation: string|null;
     department: Schema.Types.ObjectId|null;
     college: Schema.Types.ObjectId|null;
+    hostel: Schema.Types.ObjectId|null|string;
     photo: string|null;
     locked: boolean;
-    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string; emails_sent:String[], entry_time:Date, verifier: Schema.Types.ObjectId }>;  // Verifier as ObjectId
+    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string; emails_sent:String[], entry_time:Date, verifier: Schema.Types.ObjectId, invitation:String }>;  // Verifier as ObjectId
 }
 
 // User Schema Definition
@@ -36,7 +37,7 @@ const UserSchema = new Schema<IUser>({
     designation: {
         type: String,
         required: false,
-        default: null,
+        default: "Student",
     },
     department: {
         type: Schema.Types.ObjectId,
@@ -47,6 +48,12 @@ const UserSchema = new Schema<IUser>({
     college: {
         type: Schema.Types.ObjectId,
         ref: 'College',
+        required: false,
+        default: null,
+    },
+    hostel: {
+        type: Schema.Types.ObjectId,
+        ref: 'Hostel',
         required: false,
         default: null,
     },
@@ -90,6 +97,11 @@ const UserSchema = new Schema<IUser>({
                 ref: 'Verifier',  // Specify that verifier refers to the Verifier model
                 required: true,  // Verifier cannot be null
             },
+            invitation: {
+                type: String,
+                required: false,
+                default: null,
+            }
         }),
         default: {},
     }

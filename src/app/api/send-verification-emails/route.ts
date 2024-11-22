@@ -21,7 +21,7 @@ export default interface UserType{
     college: College|null;
     photo: string|null;
     repeated: boolean;
-    events: Map<string, { status: boolean; seat_no: string; enclosure_no:string; verifier: {name:string} }>;  // Verifier as ObjectId
+    events: Map<string, { status: boolean; seat_no: string; enclosure_no:string; verifier: {name:string}, invitation:string }>;  // Verifier as ObjectId
 }
 
 type EmailSuccess = {
@@ -86,11 +86,12 @@ export async function POST(req: NextRequest) {
             try {
                 jwtAccessToken=jwt.sign({event:event_id,email:user.email},String(process.env.JWT_USER_QR_SECRET));
                 const messageId = await sendEmail(
-                    `"GBPUAT - Event Verification" <${process.env.SMTP_NOREPLY}>`,
+                    `"Convocation 2024" <${process.env.SMTP_NOREPLY}>`,
                     user.email,
                     event.title+" - Invitation",
                     `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${jwtAccessToken}`,
                     VerificationEmail({jwtAccessToken,event,user,time,date,verifier:verifiers[user.events.get(event_id)?.verifier.toString()||""]}),
+                    user.events.get(event_id)?.invitation||"",`${event.title} - ${event.title} <${user.email}>.pdf`
                 );
 
                 // Record successful email sending
