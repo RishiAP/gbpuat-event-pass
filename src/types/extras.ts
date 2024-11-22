@@ -8,6 +8,7 @@ export enum headerToObject{
     "college"="college",
     "photo"="photo",
     "seat no."="seat_no",
-    "entry gate"="verifier",
-    "enclosure no."="enclosure_no"
+    "main gate"="verifier",
+    "enclosure no."="enclosure_no",
+    "hostel name"="hostel"
 }

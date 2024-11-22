@@ -1,13 +1,41 @@
-import { Card } from 'flowbite-react';
+"use client";
+import { Button, Card } from 'flowbite-react';
 import Image from 'next/image'; // Assuming you're using next/image for better image optimization
 import User from '@/types/User'; // Adjust the path according to your project
+import axios from 'axios';
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 interface UserCardProps {
   user: User;
   event:string,
+  verifying:boolean,
+  setVerifying:React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user,event }) => {
+const UserCard: React.FC<UserCardProps> = ({ user,event,verifying,setVerifying }) => {
+  
+  function verifyUser(event:React.MouseEvent<HTMLElement>){
+    setVerifying(true);
+    // Add your verification logic here
+    axios.put(`/api/verify`,{
+      user_id:user._id,
+      event_id:event
+    }).then(res=>{
+      if(res.status===200){
+        toast.success(res.data.message,{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light'});
+      }
+      else{
+        toast.error(res.data.message || "An error occurred",{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light'});
+      }
+      (event.currentTarget as HTMLButtonElement).classList.add("hidden");
+    }).catch(err=>{
+      console.log(err);
+    })
+    .finally(()=>{
+      setVerifying(false);
+    });
+  }
   return (
     <Card className="max-w-sm bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="flex flex-col">
@@ -61,8 +89,11 @@ const UserCard: React.FC<UserCardProps> = ({ user,event }) => {
             <span className="text-gray-600">Verifier/Gate:</span> <span className={`${user.same_gate?"text-green-500":"text-red-600"}`}>{user.events[event]?.verifier.name}</span>
           </div>
           <div className="mt-2">
-            <span className="text-gray-600">Status:</span> <span className={`${!user.events[event].status?"text-blue-600":user.repeated?"text-red-600":"text-green-500"}`}>{!user.events[event].status?<span>Not verified. Belongs to verifier/gate <strong>{user.events[event]?.verifier.name}</strong></span>:user.repeated?"Already Verified":"Verified"}</span>
+            <span className="text-gray-600">Status:</span> <span className={`${!user.events[event].status || user.same_gate?"text-red-600":"text-green-500"}`}>{!user.events[event].status?!user.same_gate?<span>Belongs to gate <strong>{user.events[event]?.verifier.name}</strong></span>:"Not verified" :"Already Verified"}</span>
           </div>
+          {
+            !user.events[event].status && user.same_gate?<Button gradientDuoTone="greenToBlue" className="mt-2" isProcessing={verifying} onClick={(event:React.MouseEvent<HTMLElement>)=>{verifyUser(event)}} >{verifying?"":"Verify"}</Button>:null
+          }
           </>:null
         }
       </div>

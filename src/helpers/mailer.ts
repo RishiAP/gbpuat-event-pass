@@ -20,7 +20,7 @@ interface ServerConfig {
   // create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport(serverOptions);
   // async..await is not allowed in global scope, must use a wrapper
-export default async function sendEmail(from:string,to:string,subject:string,text:string,html:string) {
+export default async function sendEmail(from:string,to:string,subject:string,text:string,html:string,pdf_url:string,pdf_name:string) {
     // send mail with defined transport object
     const info = await transporter.sendMail({
       from, // sender address
@@ -28,6 +28,13 @@ export default async function sendEmail(from:string,to:string,subject:string,tex
       subject, // Subject line
       text, // plain text body
       html, // html body
+      attachments: [
+        {
+          filename: pdf_name, // File name in the email
+          path: pdf_url, // Direct download link
+          contentType: 'application/pdf',
+        },
+      ],
     });
   
     return info.messageId;

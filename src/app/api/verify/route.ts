@@ -67,29 +67,35 @@ export async function POST(req:NextRequest){
         user=await findAndLockUser(user.email,event);
         if(user==null)
             return NextResponse.json({message:"User is locked by another verifier"},{status:423});
-        if(user.events.get(event).status){
-            user=await User.findByIdAndUpdate(user._id,{$set:{locked:false}},{new:true}).populate('department').populate(`events.${event}.verifier`).populate('college');
-            return NextResponse.json({user,same_gate:verifier._id==user.events.get(event).verifier.toString()},{status:409});
-        }
-        const session=await mongoose.startSession();
-        session.startTransaction();
-        try{
-            if(verifier._id!=user.events.get(event).verifier.toString()){
-                user=await User.findByIdAndUpdate(user._id,{$set:{locked:false}},{new:true}).populate('department').populate(`events.${event}.verifier`).populate('college');
-                return NextResponse.json({user,same_gate:false},{status:200});
-            }
-            const verifyingEvent=await Event.findByIdAndUpdate(event,{$inc:{attended:1}},{new:true,session});
-            user=await User.findByIdAndUpdate(user._id,{$set:{locked:false,[`events.${event}.status`]:true,[`events.${event}.entry_time`]:new Date()}},{new:true,session}).populate('department').populate(`events.${event}.verifier`).populate('college');
-            await session.commitTransaction();
-        }
-        catch(error){
-            await session.abortTransaction();
-            return NextResponse.json({message:"Internal Server Error"},{status:500});
-        }
-        finally{
-            session.endSession();
-        }
-        return NextResponse.json({user,same_gate:true},{status:200});
+        user=await User.findByIdAndUpdate(user._id,{$set:{locked:false}},{new:true}).populate('department').populate(`events.${event}.verifier`).populate('college');
+        return NextResponse.json({user,same_gate:verifier._id==user.events.get(event).verifier._id},{status:409});
+    }
+    catch(error){
+        console.log(error);
+        return NextResponse.json({error},{status:500});
+    }
+}
+
+export async function PUT(req:NextRequest){
+    const {user_id,event_id}=await req.json();
+    if(user_id==null || event_id==null)
+        return NextResponse.json({message:"Invalid Request"},{status:400});
+    try{
+        const user=await User.findById(user_id);
+        if(user==null)
+            return NextResponse.json({message:"User not found"},{status:404});
+        if(user.events.get(event_id)==null)
+            return NextResponse.json({message:"User not registered for this event"},{status:404});
+        const event=await Event.findById(event_id);
+        if(event==null)
+            return NextResponse.json({message:"Event not found"},{status:404});
+        const verifier=await Verifier.findById(user.events.get(event_id).verifier);
+        if(verifier==null)
+            return NextResponse.json({message:"Verifier not found"},{status:404});
+        if(user.events.get(event_id).status==true)
+            return NextResponse.json({message:"User already verified"},{status:409});
+        await User.findByIdAndUpdate(user_id,{$set:{[`events.${event_id}.status`]:true}});
+        return NextResponse.json({message:"User verified successfully"},{status:200});
     }
     catch(error){
         console.log(error);

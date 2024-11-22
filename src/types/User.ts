@@ -2,6 +2,7 @@ import Department from "@/types/Department";
 import College from "@/types/College";
 
 export default interface User{
+    _id: string;
     email: string;
     name: string;
     aadhar: string;
@@ -12,5 +13,6 @@ export default interface User{
     photo: string|null;
     repeated: boolean;
     same_gate: boolean;
-    events: {[key:string]: { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: {name:string} }};  // Verifier as ObjectId
+    hostel:{name:string}|null;
+    events: {[key:string]: { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: {name:string}, invitation:string; };};  // Verifier as ObjectId
 }
