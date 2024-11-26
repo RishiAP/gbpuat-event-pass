@@ -8,11 +8,13 @@ import { getUserFromHeader } from "@/helpers/common_func";
 import { Verifier } from "@/models/Verifier";
 import { Event } from "@/models/Event";
 import mongoose from "mongoose";
+import { Hostel } from "@/models/Hostel";
 connect();
 
 Department;
 College;
 Verifier;
+Hostel;
 
 function pause(milliseconds:number) {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -64,11 +66,10 @@ export async function POST(req:NextRequest){
             return NextResponse.json({message:"User not found please retry"},{status:404});
         if(user.events.get(event)==null)
             return NextResponse.json({message:"User not registered for this event"},{status:404});
-        user=await findAndLockUser(user.email,event);
         if(user==null)
             return NextResponse.json({message:"User is locked by another verifier"},{status:423});
-        user=await User.findByIdAndUpdate(user._id,{$set:{locked:false}},{new:true}).populate('department').populate(`events.${event}.verifier`).populate('college');
-        return NextResponse.json({user,same_gate:verifier._id==user.events.get(event).verifier._id},{status:409});
+        user=await User.findByIdAndUpdate(user._id,{$set:{locked:false}},{new:true}).populate(`department events.${event}.verifier college hostel`);
+        return NextResponse.json({user,same_gate:verifier._id==user.events.get(event).verifier._id},{status:200});
     }
     catch(error){
         console.log(error);
@@ -81,7 +82,7 @@ export async function PUT(req:NextRequest){
     if(user_id==null || event_id==null)
         return NextResponse.json({message:"Invalid Request"},{status:400});
     try{
-        const user=await User.findById(user_id);
+        let user=await User.findById(user_id);
         if(user==null)
             return NextResponse.json({message:"User not found"},{status:404});
         if(user.events.get(event_id)==null)
@@ -92,10 +93,12 @@ export async function PUT(req:NextRequest){
         const verifier=await Verifier.findById(user.events.get(event_id).verifier);
         if(verifier==null)
             return NextResponse.json({message:"Verifier not found"},{status:404});
+        user=await findAndLockUser(user.email,event_id);
         if(user.events.get(event_id).status==true)
             return NextResponse.json({message:"User already verified"},{status:409});
-        await User.findByIdAndUpdate(user_id,{$set:{[`events.${event_id}.status`]:true}});
-        return NextResponse.json({message:"User verified successfully"},{status:200});
+        const time=new Date();
+        await User.findByIdAndUpdate(user_id,{$set:{[`events.${event_id}.status`]:true,[`events.${event_id}.entry_time`]:time,locked:false}});
+        return NextResponse.json({message:"User verified successfully",time},{status:201});
     }
     catch(error){
         console.log(error);

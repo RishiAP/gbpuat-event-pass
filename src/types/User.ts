@@ -14,5 +14,5 @@ export default interface User{
     repeated: boolean;
     same_gate: boolean;
     hostel:{name:string}|null;
-    events: {[key:string]: { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: {name:string}, invitation:string; };};  // Verifier as ObjectId
+    events: {[key:string]: { status: boolean; seat_no: string|null; enclosure_no:string|null; verifier: {name:string}, invitation:string; entry_gate:string|null; entry_time:null|Date };};  // Verifier as ObjectId
 }
