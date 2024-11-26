@@ -7,6 +7,8 @@ import React from 'react';
 import UNIEvents from '@/types/Event';
 import { Event } from '@/models/Event';
 import { FaLocationDot } from 'react-icons/fa6';
+import { connect } from '@/config/database/mongoDBConfig';
+connect();
 
 const VerifierPage = async () => {
   const events: UNIEvents[] = await Event.find({ status: 'active' });
