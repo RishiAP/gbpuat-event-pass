@@ -10,5 +10,6 @@ export enum headerToObject{
     "seat no."="seat_no",
     "main gate"="verifier",
     "enclosure no."="enclosure_no",
-    "hostel name"="hostel"
+    "hostel name"="hostel",
+    "entry gate"="entry_gate"
 }

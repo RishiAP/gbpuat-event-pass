@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
             const rowData: { [key: string]: any } = {};
             headers.forEach((header: keyof typeof headerToObject, i: number) => {
                 rowData[headerToObject[header]] = row[i] || null;
-
+                
                 if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "main gate" || header==="enclosure no.")) {
                     return null;
                 }
@@ -144,14 +144,12 @@ export async function POST(req: NextRequest) {
                         throw new Error(`Invalid hostel '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
                 }
+                
             });
             return rowData;
         }).filter((row) => row != null);
 
-        const uniqueEmails = new Set<string>();
-
         for (const user of data) {
-            uniqueEmails.add(user.email);
             eventVerifiers.set(user.verifier, (eventVerifiers.get(user.verifier)||0)+1);
             await User.findOneAndUpdate(
                 { email: user.email },
@@ -168,7 +166,8 @@ export async function POST(req: NextRequest) {
                         [`events.${event_id}.status`]: false,
                         [`events.${event_id}.seat_no`]: user.seat_no,
                         [`events.${event_id}.enclosure_no`]: user.enclosure_no,
-                        [`events.${event_id}.verifier`]: user.verifier
+                        [`events.${event_id}.verifier`]: user.verifier,
+                        [`events.${event_id}.entry_gate`]: user.entry_gate,
                     },
                     ...(user.college_id!=null && typeof user.college_id=="number"?{
                         college_id: user.college_id
@@ -181,7 +180,8 @@ export async function POST(req: NextRequest) {
                 }
             );
         }
-        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants:uniqueEmails.size,
+        const participants=await User.countDocuments({});
+        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants,
             verifiers: Array.from(eventVerifiers.entries()).map(([key,value])=>({verifier:key,no_of_users:value}))
         }, { new:true });
 

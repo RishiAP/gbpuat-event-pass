@@ -2,7 +2,7 @@ import React from 'react'
 import User from '@/types/User'
 import jwt from 'jsonwebtoken'
 
-const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_no:string) => {
+const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_no:string,entry_gate:string|null) => {
   return (
     `<!DOCTYPE html>
 <html lang="en">
@@ -11,15 +11,21 @@ const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>36th Convocation Invitation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
     <style>
         /* Define font-face for local fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700');
+
+        /* @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap'); */
+        
+        /* @import url('https://fonts.cdnfonts.com/css/times-new-roman');  */
+        
 
         /* Global styles */
         body {
             margin: 0;
             padding: 20px;
             background-color: #ffffff;
+            font-family: 'Times New Roman', Times, serif;
         }
 
         .container {
@@ -30,13 +36,13 @@ const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_
         /* Custom classes */
         .dancing-script {
             font-family: "Dancing Script", cursive;
-            font-weight: bold;
+            font-weight: bold;  
         }
 
         .university-logo {
-            width: 150px;
+            width: 115px;
             height: auto;
-            margin: 20px 0;
+            margin: 7px 0;
         }
 
         .admin-building {
@@ -48,35 +54,31 @@ const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_
 
         .profile-section {
             display: grid;
+            align-items: center;
             grid-template-columns: auto 1fr;
             gap: 2rem;
-            margin: 2rem 0;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        
-        .gate-enclosure{
-            display:flex;
-            justify-content:space-evenly;
-            margin: 2rem 0;
-            padding: 1rem;
+            margin: 0.7rem 0;
+            margin-top: 1rem;
+            padding: 0.5rem 1.75rem;
             border: 1px solid #ddd;
             border-radius: 8px;
         }
 
         .profile-image {
             width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
+            height: auto;
+            /* object-fit: cover;
+            border-radius: 4px; */
         }
 
         .profile-details {
             display: grid;
+            gap: 0.2rem;
+        }
+        .profile-details_2 {
+            display: contents;
             gap: 0.5rem;
         }
-
         .detail-row{
             display: flex;
         }
@@ -85,8 +87,20 @@ const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_
             align-items: start;
             width:200px;
         }
-        .detailed-row span {
+        .detail-row .span {
             width: 100%;
+            display: flex;
+            gap: 2rem;
+        }
+        .contact_details{
+            /* margin: 0.5rem 0;
+            padding: 0.25rem; */
+            margin-left: 8rem;
+            margin-right: 8rem;
+            justify-content: space-between;
+            display: flex;
+            /* border: 1px solid #ddd;
+            border-radius: 8px; */
         }
 
         /* Print specific styles */
@@ -112,89 +126,92 @@ const InvitationTemplate = (user:User,event_id:string,verifier:string,enclosure_
 </head>
 <body>
     <div class="container">
-        <!-- Page 1 -->
-        <div class="text-center">
-            <img src="https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png" alt="University Logo" class="university-logo">
-            <h2 class="fs-3 mb-0" style="color: var(--primary-blue);">Invitation</h2>
-            <h3 style="color: var(--accent-red);">G. B. Pant University of Agriculture and Technology</h3>
-            <h3 style="color: var(--primary-blue);">Pantnagar-263145, U. S. Nagar, Uttarakhand</h3>
-            
-            <img src="https://res.cloudinary.com/dnxfq38fr/image/upload/v1732103768/gbpuat-event-pass/oaahfvo36cv2lkxm2qo3.jpg" alt="Administrative Building" class="admin-building">
-            
-            <h3 class="dancing-script" style="color: var(--accent-red);">36TH</h3>
-            <h3 class="dancing-script" style="color: var(--dark-blue);">CONVOCATION</h3>
-            <h3 class="dancing-script">WEDNESDAY 27 NOVEMBER, 2024</h3>
-            
-            <div class="mt-4">
-                <h3>at</h3>
-                <h3>Convocation Ground of the University</h3>
-                <h3 style="color: var(--accent-red)">Smt. Droupadi Murmu</h3>
-                <h3 style="color: var(--accent-red);">Hon'ble President of India</h3>
-                <h3 style="color: var(--secondary-blue)">will be the Chief Guest and deliver Convocation Address</h3>
-                <h3 style="color: var(--accent-red);">Lt. General Gurmit Singh (Retd.)</h3>
-            </div>
-        </div>
-
-        <!-- Page 2 -->
+        <!-- Page -->
         <div class="page-break text-center">
             <img src="https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png" alt="University Logo" class="university-logo">
             
-            <h3 style="color: var(--accent-red);" class="mt-1">
-                Vice-Chancellor, Board of Management<br>
-                And<br>
+            <h3 style="color: #990000; font-size: 25px;" class="mt-1">
+                Vice-Chancellor, Board of Management
+                and
                 Academic Council
             </h3>
             
-            <h3 style="color: #00b050;">G.B. Pant University of Agriculture and Technology, Pantnagar</h3>
-            <h3>cordially invite you to the</h3>
-            <h3>XXXVI CONVOCATION</h3>
+            <h3 style="color: #00b050; font-size: 24px;" >G.B. Pant University of Agriculture and Technology, Pantnagar</h3>
+            <h3 style="font-size: 20px;">cordially invite you to the</h3>
+            <h3 style="color: #00b050; "><strong>XXXVI CONVOCATION</strong></h3>
+            <div class="text-center">
+                    <h6 style="color: rgb(32, 30, 30); font-size: 17px;">to be held on</h6>
+                    <h4 style="color: rgb(33, 33, 149); font-size: 20px; margin-bottom: 2px;"><strong>Wednesday, 27 November, 2024 at 11:00 a.m.</strong></h4>
+                    <h6 style="color: rgb(32, 30, 30); font-size: 17px; margin-bottom: 2px;">at</h6>
+                    <h4 style="color: rgb(33, 33, 149); font-size: 20px;"><strong>Convocation Ground of the University.</strong></h4>
+            </div>
             
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=196x196&data=${jwt.sign({event:event_id,email:user.email},String(process.env.JWT_USER_QR_SECRET))}" alt="QR Code" class="mt-4" style="width: 196px; height: 196px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=196x196&data=${jwt.sign({event:event_id,email:user.email},String(process.env.JWT_USER_QR_SECRET))}" alt="QR Code" class="mt-2" style="width: 196px; height: 196px;">
             
             <div class="profile-section">
-                <img src="${user.photo}" alt="Profile Image" class="profile-image">
+                <img src="${user.photo!=null?user.photo:"https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png"}" alt="Profile Image" class="profile-image">
                 <div class="profile-details">
-                    <div class="detail-row">
-                        <strong>Name:</strong>
-                        <span>${user.name}</span>
+                    <div class="detail-row" style="font-size: 22.5px;">
+                        <strong>Name</strong>
+                        <strong class="span"><span>:</span><span>${user.name}</span></strong>
                     </div>
-                    ${user.designation=="Student" || user.designation==null?`
-                        <div class="detail-row">
-                        <strong>ID No:</strong>
-                        <span>${user.college_id}</span>
+                    ${
+                        user.college!=null?
+                        `<div class="detail-row">
+                        <strong>Designation</strong>
+                        <strong class="span"><span>:</span><span>${user.designation}</span></strong>
+                    </div>
+                        ${user.department!=null?
+                        `<div class="detail-row">
+                            <strong>Department</strong>
+                            <strong class="span"><span>:</span><span>${user.department.name}</span></strong>
+                        </div>`:""
+                        }
+                    <div class="detail-row">
+                        <strong>College</strong>
+                        <strong class="span"><span>:</span><span>${user.college.name}</span></strong>
+                    </div>`:
+                    `
+                    <div class="detail-row">
+                        <strong>ID No.</strong>
+                        <strong class="span"><span>:</span><span>${user.college_id}</span></strong>
                     </div>
                     <div class="detail-row">
-                        <strong>Hostel:</strong>
-                        <span>${user.hostel?.name}</span>
-                    </div>`:""}
-                    ${user.designation!="Student" && user.designation!=null?`
-                        <div class="detail-row">
-                        <strong>Designation :</strong>
-                        <span>${user.designation}</span>
+                        <strong>Hostel</strong>
+                        <strong class="span"><span>:</span><span>${user.hostel!.name}</span></strong>
                     </div>
+                    `
+                    }
+                    
                     <div class="detail-row">
-                        <strong>College:</strong>
-                        <span>${user.college?.name}</span>
-                    </div>`:""}
-                    <div class="detail-row">
-                        <strong>Aadhar No.:</strong>
-                        <span>${user.aadhar}</span>
+                        <strong>Aadhar No.</strong>
+                        <strong class="span"><span>:</span><span>${user.aadhar}</span></strong>
+                    </div>
+                    <div class="detail-row" style="font-size: 22.5px;">
+                        <strong>Main Gate</strong>
+                        <strong class="span"><span>:</span><span>${verifier}</span></strong>
+                    </div>
+                    <div class="detail-row" >
+                        <strong>Entry Gate</strong>
+                        <strong class="span"><span>:</span><span>${entry_gate}</span></strong>
+                    </div>
+                    <div class="detail-row"> 
+                        <strong>Enclosure No.</strong>
+                        <strong class="span"><span>:</span><span>${enclosure_no}</span></strong>
                     </div>
                 </div>
             </div>
-            <div class="gate-enclosure">
-                <div class="d-flex gap-4 align-items-center">
-                    <strong>Gate No:</strong>
-                    <span>${verifier}</span>
-                </div>
-                <div class="d-flex gap-4 align-items-center">
-                    <strong>Enclosure No:</strong>
-                    <span>${enclosure_no}</span>
-                </div>
+
+            <h4 style="font-size: 17px;">R.S.V.P</h4>
+            <h4 style="color: var(--secondary-blue); font-size: 24px;">Registrar</h4>
+            <div class="contact_details">
+                <h6>Ph. 05944-233640</h6>
+                <h6>Mobile: 9528023394</h6>
             </div>
-            
-            <h3 style="font-size: 25px;">R.S.V.P</h3>
-            <h3 style="color: var(--secondary-blue); font-size: 30px;">Registrar</h3>
+            <!-- <hr style="border: 2px solid black;"> -->
+            <div>
+                <p style="color: rgb(150, 25, 0);">PS: Please bring a printout of this card for QR code scanning at the Security Gate for Pandal Entry.</p>
+            </div>
         </div>
     </div>
 </body>

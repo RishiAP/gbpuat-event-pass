@@ -69,7 +69,7 @@ const EventVerifyPage = ({params}:{params:{event:string}}) => {
         ) : (
           <div className="flex flex-col items-center">
             {
-              isLoading?<VerifyingUserSkeleton/>:user?<UserCard user={user} event={params.event} verifying={verifying} setVerifying={setVerifying} />:null
+              isLoading?<VerifyingUserSkeleton/>:user?<UserCard user={user} setUser={setUser} event_id={params.event} verifying={verifying} setVerifying={setVerifying} />:null
             }
             <button
               onClick={handleRescan}

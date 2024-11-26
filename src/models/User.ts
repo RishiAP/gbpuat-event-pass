@@ -12,7 +12,7 @@ export interface IUser extends Document {
     hostel: Schema.Types.ObjectId|null|string;
     photo: string|null;
     locked: boolean;
-    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string; emails_sent:String[], entry_time:Date, verifier: Schema.Types.ObjectId, invitation:String }>;  // Verifier as ObjectId
+    events: Map<Schema.Types.ObjectId, { status: boolean; seat_no:string; enclosure_no: string; emails_sent:String[], entry_gate:string, entry_time:Date, verifier: Schema.Types.ObjectId, invitation:String }>;  // Verifier as ObjectId
 }
 
 // User Schema Definition
@@ -85,6 +85,11 @@ const UserSchema = new Schema<IUser>({
             },
             entry_time: {
                 type: Date,
+                required: false,
+                default: null,
+            },
+            entry_gate: {
+                type: String,
                 required: false,
                 default: null,
             },
