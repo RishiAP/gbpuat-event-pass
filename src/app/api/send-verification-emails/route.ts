@@ -10,6 +10,9 @@ import EventType from "@/types/Event";
 import { Verifier } from "@/models/Verifier";
 import Department from "@/types/Department";
 import College from "@/types/College";
+import { connect } from "@/config/database/mongoDBConfig";
+
+connect();
 
 export default interface UserType{
     email: string;
