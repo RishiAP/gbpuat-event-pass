@@ -8,6 +8,7 @@ import UNIEvents from '@/types/Event';
 import { Event } from '@/models/Event';
 import { FaLocationDot } from 'react-icons/fa6';
 import { connect } from '@/config/database/mongoDBConfig';
+import FrontEndDate from '@/components/FrontEndDate';
 connect();
 
 const VerifierPage = async () => {
@@ -59,7 +60,7 @@ const VerifierPage = async () => {
                 </div>
                 <div className="flex items-center gap-2 mb-1 text-sm">
                   <FaClock className="text-orange-400" />
-                  <span>{date.getHours()}:{date.getMinutes()}</span>
+                  <span><FrontEndDate date={date} /></span>
                 </div>
 
                 {event.participants > 0 && (

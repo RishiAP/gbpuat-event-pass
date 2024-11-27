@@ -11,3 +11,7 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json(event,{status:200});
 }
+
+export async function POST(req:NextRequest){
+    return NextResponse.json({message:"Method not allowed"},{status:405});
+}
