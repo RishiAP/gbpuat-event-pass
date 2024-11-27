@@ -24,7 +24,7 @@ const AppBar=()=> {
   return (
     <>
     <Navbar fluid rounded>
-      <Navbar.Brand href="/">
+      <Navbar.Brand href="#">
         <NEXTImage width={100} height={100} src="https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png" alt="GBPUAT Logo" className="mr-3 h-12 sm:h-40" style={{height:"100%", width:"auto"}} />
         <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">GBPUAT Events</span>
       </Navbar.Brand>
