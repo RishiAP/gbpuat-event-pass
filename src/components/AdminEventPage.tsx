@@ -31,11 +31,11 @@ const AdminEventPage: React.FC<AdminEventPageProps> = ({ event }) => {
     catch(err){
         console.error(err);
     }
-    setTimeout(liveFetch, 5000);
+    setTimeout(liveFetch, 60000);
 }
 
   useEffect(() => {
-    setTimeout(liveFetch, 5000);
+    setTimeout(liveFetch, 60000);
 },[]);
 
   return (
@@ -120,7 +120,7 @@ const VerifierInfo: React.FC<VerifierInfoProps> = ({ verifier,no_of_users,attend
       <div className="mt-4">
         <h3 className="text-md font-semibold">Verifier Attendance</h3>
         <Progress progress={attendancePercentage} color="green" />
-        <p className="text-sm mt-1">{attendancePercentage}% Attendance</p>
+        <p className="text-sm mt-1 flex justify-between"><span>{attendancePercentage}% Attendance</span><span>{attended}/{no_of_users}</span></p>
       </div>
     </div>
   );
