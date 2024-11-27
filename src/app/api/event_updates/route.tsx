@@ -2,7 +2,9 @@ import { connect } from "@/config/database/mongoDBConfig";
 import { getUserFromHeader } from "@/helpers/common_func";
 import { Event } from "@/models/Event";
 import { User } from "@/models/User";
+import { Verifier } from "@/models/Verifier";
 import { NextRequest, NextResponse } from "next/server";
+Verifier;
 connect();
 
 export async function GET(req: NextRequest) {
