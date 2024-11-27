@@ -8,6 +8,7 @@ import { Verifier } from "@/models/Verifier";
 import E from "@/types/Event";
 import { create } from "domain";
 import type { Metadata } from "next";
+Verifier;
 connect();
 
 export default async function RootLayout({
