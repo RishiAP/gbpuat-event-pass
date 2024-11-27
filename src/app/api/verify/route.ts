@@ -97,7 +97,21 @@ export async function PUT(req:NextRequest){
         if(user.events.get(event_id).status==true)
             return NextResponse.json({message:"User already verified"},{status:409});
         const time=new Date();
-        await User.findByIdAndUpdate(user_id,{$set:{[`events.${event_id}.status`]:true,[`events.${event_id}.entry_time`]:time,locked:false}});
+        const session=await mongoose.startSession();
+        session.startTransaction();
+        try{
+            await User.findByIdAndUpdate(user_id,{$set:{[`events.${event_id}.status`]:true,[`events.${event_id}.entry_time`]:time,locked:false}}, {session});
+            await Event.findByIdAndUpdate(event_id,{$inc:{attended:1}},{session});
+            await session.commitTransaction();
+        }
+        catch(error){
+            await session.abortTransaction();
+            throw error;
+        }
+        finally{
+            await User.findByIdAndUpdate(user_id,{$set:{locked:false}});
+            session.endSession();
+        }
         return NextResponse.json({message:"User verified successfully",time},{status:201});
     }
     catch(error){

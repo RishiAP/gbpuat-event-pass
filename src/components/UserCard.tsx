@@ -46,7 +46,7 @@ const UserCard: React.FC<UserCardProps> = ({ user,setUser,event_id,verifying,set
       if(res.status===201){
         toast.success(res.data.message,{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light'});
         setCurrentStatus(true);
-        setUser({...user,events:{...user.events,[event_id]:{...user.events[event_id],entry_time:new Date()}}});
+        setUser({...user,events:{...user.events,[event_id]:{...user.events[event_id],entry_time:res.data.time}}});
       }
       else{
         toast.error(res.data.message || "An error occurred",{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light'});
