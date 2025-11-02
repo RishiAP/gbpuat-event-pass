@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
                 }
             );
         }
-        const participants=await User.countDocuments({});
+        const participants=await User.find({[`events.${event_id}`]:{$exists:true}}).countDocuments();
         const no_of_verifiers:number=Array.from(verifierMap.keys()).length;
         for(let i=0;i<no_of_verifiers;i++){
             const no_of_users=await User.countDocuments({[`events.${event_id}.verifier`]:verifiers[i]._id});
