@@ -1,89 +1,344 @@
-
 "use client";
 
 import { setEvents } from "@/store/eventsSlice";
 import Event from "@/types/Event";
 import axios from "axios";
-import { Button, Datepicker, FloatingLabel, Modal } from "flowbite-react";
-import { FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
+import { CalendarIcon, Clock, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-export function CreateEventModal() {
-  const [openModal, setOpenModal] = useState(false);
-  const dispatch=useDispatch();
-  const [loading,setLoading]=useState(false);
-  const events=useSelector((state:any)=>state.events.value);
-  const initialForm={
-    title: "",
-    description: "",
-    date: new Date(),
-    location: "",
-  };
-  const [formData, setFormData] = useState<{title:string,description:string,date:Date,location:string}>(initialForm);
+const eventSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Event title is required")
+    .max(100, "Title must be less than 100 characters"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(500, "Description must be less than 500 characters"),
+  location: z
+    .string()
+    .min(1, "Location is required")
+    .max(200, "Location must be less than 200 characters"),
+  date: z
+    .date()
+    .refine(
+      (date) => date >= new Date(new Date().setHours(0, 0, 0, 0)),
+      { message: "Event date must be in the future" }
+    ),
+});
 
-  function handleFormSubmit(e:FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    axios.post("/api/admin", {...formData,type:"event"}).then((res) => {
-      console.log(res.data);
-      dispatch(setEvents([...events,res.data]));
-      setFormData(initialForm);
-      setOpenModal(false);
-      toast.success("Event added successfully",{theme:document.querySelector('html')?.classList.contains('dark-mode')?'dark':'light'});
-    }).catch((err) => {
+type EventFormData = z.infer<typeof eventSchema>;
+
+interface EventModalProps {
+  event?: Event;
+  isOpen: boolean;
+  onClose: () => void;
+  onEventUpdated: (event: Event) => void;
+}
+
+const getInitialForm = (): EventFormData => ({
+  title: "",
+  description: "",
+  date: new Date(),
+  location: "",
+});
+
+export function EventModal({
+  event,
+  isOpen,
+  onClose,
+  onEventUpdated,
+}: EventModalProps) {
+  const dispatch = useDispatch();
+  const events = useSelector((state: any) => state.events.value);
+
+  const form = useForm<EventFormData>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: getInitialForm(),
+  });
+
+  // Reset form when modal opens / event changes
+  useEffect(() => {
+    if (event) {
+      form.reset({
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        date: new Date(event.date),
+      });
+    } else {
+      form.reset(getInitialForm());
+    }
+  }, [event, isOpen, form]);
+
+  const onSubmit = async (data: EventFormData): Promise<void> => {
+    const toastId = toast.loading(event ? "Updating event..." : "Adding event...");
+
+    try {
+      if (event) {
+        await axios.put("/api/admin", {
+          ...data,
+          type: "event",
+          _id: event._id,
+        });
+        onEventUpdated({ ...event, ...data });
+        toast.dismiss(toastId);
+        toast.success("Event updated successfully");
+      } else {
+        const res = await axios.post("/api/admin", { ...data, type: "event" });
+        dispatch(setEvents([...events, res.data]));
+        toast.dismiss(toastId);
+        toast.success("Event added successfully");
+      }
+
+      onClose();
+      setTimeout(() => form.reset(getInitialForm()), 300);
+    } catch (err: any) {
+      toast.dismiss(toastId);
       console.error(err);
-      toast.error(err.response.data.error==""?"Something went wrong":err.response.data.error.code==11000?"Duplicate event title":err.response.data.error,{theme:document.querySelector('html')?.classList.contains('dark')?'dark':'light'});
-    }).finally(()=>setLoading(false));
-  }
+      const action = event ? "update" : "add";
+      const errorMessage =
+        err.response?.data?.error?.code === 11000
+          ? "Duplicate event title"
+          : err.response?.data?.message ||
+            err.response?.data?.error ||
+            `Failed to ${action} event`;
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [h, m] = e.currentTarget.value.split(":").map(Number);
+    const current = form.getValues("date");
+    const date = new Date(current);
+    date.setHours(h);
+    date.setMinutes(m);
+    form.setValue("date", date);
+  };
+
+  const getTimeZoneAbbreviation = () => {
+    const date = form.watch("date");
+    return date
+      .toLocaleDateString(undefined, { day: "2-digit", timeZoneName: "long" })
+      .substring(4)
+      .split(" ")
+      .map((s) => s[0])
+      .join("");
+  };
+
+  const handleClose = (open: boolean) => {
+    if (!form.formState.isSubmitting && !open) {
+      onClose();
+      setTimeout(() => form.reset(getInitialForm()), 300);
+    }
+  };
 
   return (
-    <>
-      <Button className='mt-4' size='xl' color='purple' onClick={() => setOpenModal(true)}>Add Event</Button>
-      <Modal dismissible show={loading || openModal} onClose={() => setOpenModal(false)} id="createEventModal">
-        <Modal.Header>Add a new event</Modal.Header>
-        <form onSubmit={handleFormSubmit}>
-        <Modal.Body>
-          <div className="space-y-6">
-            <FloatingLabel variant="standard" label="Event Title" value={formData.title} onInput={(e)=>setFormData({...formData,title:e.currentTarget.value})} required />
-            <FloatingLabel variant="standard" label="Description" value={formData.description} onInput={(e)=>setFormData({...formData,description:e.currentTarget.value})} required />
-            <FloatingLabel variant="standard" label="Location" value={formData.location} onInput={(e)=>setFormData({...formData,location:e.currentTarget.value})} required />
-              <div className="flex">
-            <Datepicker className="event-date rounded-e-none w-full" minDate={formData.date} value={formData.date} onChange={(e)=>{e?.setMinutes(formData.date.getMinutes()); e?.setHours(formData.date.getHours()); setFormData({...formData,date:e==null?new Date():e})}} required />
+    <Dialog open={form.formState.isSubmitting || isOpen} onOpenChange={handleClose}>
+      {/* RESPONSIVE DIALOG */}
+      <DialogContent className="max-w-full sm:max-w-[525px] p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle>{event ? "Edit Event" : "Add a new event"}</DialogTitle>
+          <DialogDescription>
+            {event
+              ? "Update the event details below."
+              : "Create a new event by filling in the details below."}
+          </DialogDescription>
+        </DialogHeader>
 
-            <div className="relative">
-                <div className="absolute inset-y-0 end-0 top-0 flex items-center pe-3.5 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                        <path fillRule="evenodd" d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4a1 1 0 1 0-2 0v4a1 1 0 0 0 .293.707l3 3a1 1 0 0 0 1.414-1.414L13 11.586V8Z" clipRule="evenodd"/>
-                    </svg>
-                </div>
-                <input type="time" id="time" className="bg-gray-50 h-full rounded-s-none rounded-lg border leading-none border-gray-300 text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" value={(formData.date.getHours()<10?"0":"")+ formData.date.getHours()+":"+(formData.date.getMinutes()<10?"0":"")+formData.date.getMinutes()} onInput={
-                    (e)=>{
-                        const time=e.currentTarget.value.split(":");
-                        const date=formData.date;
-                        date.setMinutes(parseInt(time[1]));
-                        date.setHours(parseInt(time[0]));
-                        setFormData({...formData,date});
-                    }
-                  } required />
-            </div>
-            <div className="mt-2 ms-2">
-            {
-              formData.date.toLocaleDateString(undefined, {day:'2-digit',timeZoneName: 'long' }).substring(4).split(" ").flatMap((item,index)=>item.substring(0,1))
-            }
-            </div>
-          
-              </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer className="justify-end">
-          <Button color="gray" onClick={() => setOpenModal(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" isProcessing={loading} >{loading?"Adding...":"Add Event"}</Button>
-        </Modal.Footer>
-        </form>
-      </Modal>
-    </>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Title */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Event Title</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter event title"
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter event description"
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Location */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter event location"
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Date & Time – RESPONSIVE ROW */}
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date and Time</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {/* Calendar Popover */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full sm:w-auto justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            disabled={form.formState.isSubmitting}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(field.value, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full sm:w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                const hours = field.value.getHours();
+                                const minutes = field.value.getMinutes();
+                                date.setHours(hours);
+                                date.setMinutes(minutes);
+                                field.onChange(date);
+                              }
+                            }}
+                            disabled={(d) =>
+                              d < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Time Input */}
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          type="time"
+                          className="pl-10 w-full"
+                          value={`${String(field.value.getHours()).padStart(
+                            2,
+                            "0"
+                          )}:${String(field.value.getMinutes()).padStart(2, "0")}`}
+                          onChange={handleTimeChange}
+                          disabled={form.formState.isSubmitting}
+                        />
+                      </div>
+
+                      {/* Timezone Badge */}
+                      <div className="flex items-center px-3 py-2 border rounded-md bg-muted text-sm font-medium whitespace-nowrap">
+                        {getTimeZoneAbbreviation()}
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* RESPONSIVE FOOTER */}
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleClose(false)}
+                disabled={form.formState.isSubmitting}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full sm:w-auto"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {form.formState.isSubmitting
+                  ? event
+                    ? "Updating..."
+                    : "Adding..."
+                  : event
+                  ? "Update Event"
+                  : "Add Event"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

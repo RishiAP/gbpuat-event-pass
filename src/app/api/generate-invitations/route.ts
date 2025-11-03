@@ -35,7 +35,7 @@ const bufferToStream = (buffer: Buffer): Readable => new Readable({
   }
 });
 
-export const initializeGoogleDrive = () => {
+const initializeGoogleDrive = () => {
   const credentials = {
     client_email: process.env.GOOGLE_CLIENT_EMAIL,
     private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),

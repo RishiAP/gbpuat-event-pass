@@ -4,18 +4,30 @@ import { headerToObject } from "@/types/extras";
 import { setFileUploadModalStatus } from "@/store/fileUploadModalSlice";
 import Event from "@/types/Event";
 import axios from "axios";
-import { Button, FileInput, Modal, Progress } from "flowbite-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { setEvents } from "@/store/eventsSlice";
+import { Loader2 } from "lucide-react";
 
 export function FileUploadModal() {
   const fileUploadModalStatus = useSelector((state: any) => state.fileUploadModal.value.status);
   const fileUploadModalEventID = useSelector((state: any) => state.fileUploadModal.value.event_id);
-  const [isUploading, setIsUploading] = useState(false); // Track file upload state
-  const [isProcessing, setIsProcessing] = useState(false); // Track data processing state
-  const [progress, setProgress] = useState(0); // Progress state
+  const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const dispatch = useDispatch();
   const events: Event[] = useSelector((state: any) => state.events.value);
   const [file, setFile] = useState<File | null>(null);
@@ -36,69 +48,69 @@ export function FileUploadModal() {
           onUploadProgress: (progressEvent: any) => {
             if (progressEvent && progressEvent.total) {
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setProgress(percentCompleted); // Update progress state
-              if(percentCompleted === 100) {
-                setIsProcessing(true); // Switch to data processing state
+              setProgress(percentCompleted);
+              if (percentCompleted === 100) {
+                setIsProcessing(true);
                 setIsUploading(false);
               }
             }
           },
         })
         .then((response) => {
-          setIsProcessing(true); // Switch to data processing state
+          setIsProcessing(true);
           const e: Event[] = events.filter((e: Event) => e._id !== fileUploadModalEventID);
           dispatch(setEvents([...e, response.data.event]));
           dispatch(setFileUploadModalStatus(false));
-          toast.success(response.data.message, {
-            theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light",
-          });
+          toast.success(response.data.message);
         })
         .catch((error) => {
           toast.error(
-            error.response.data.origin != undefined
+            error.response?.data?.origin != undefined
               ? error.response.data.origin
-              : error.response.data.error != ""
-              ? error.response.data.error
-              : "Something went wrong",
-            { theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light" }
+              : error.response?.data?.error != ""
+              ? error.response?.data?.error
+              : "Something went wrong"
           );
         })
         .finally(() => {
           setIsUploading(false);
-          setIsProcessing(false); // Reset processing state
-          setProgress(0); // Reset progress after completion
+          setIsProcessing(false);
+          setProgress(0);
         });
     } else {
-      toast.error("Please select a file", {
-        theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light",
-      });
+      toast.error("Please select a file");
+    }
+  }
+
+  function handleClose() {
+    if (!isUploading && !isProcessing) {
+      dispatch(setFileUploadModalStatus(false));
     }
   }
 
   return (
-    <>
-      <Modal dismissible show={isUploading || fileUploadModalStatus} onClose={() => dispatch(setFileUploadModalStatus(false))}>
-        <Modal.Header>Upload User data</Modal.Header>
+    <Dialog open={isUploading || fileUploadModalStatus} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[525px]">
+        <DialogHeader>
+          <DialogTitle>Upload User Data</DialogTitle>
+          <DialogDescription>
+            Upload a file containing user data for the selected event.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleFileUpload}>
-          <Modal.Body>
-            <div className="space-y-3">
-              <p>
-                <strong>Event : </strong>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <p className="text-sm">
+                <strong>Event: </strong>
                 {events.find((e: Event) => e._id === fileUploadModalEventID)?.title}
               </p>
-              <FileInput
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file">Select File</Label>
+              <Input
                 id="file"
-                helperText={
-                  <>
-                    <span>{`Upload a excel(.xls,.xlsx), .json or .csv file. The file should contain fields namely : `}</span>
-                    {Object.keys(headerToObject).map((key) => (
-                      <span key={key}>
-                        <strong>{key}</strong>,{" "}
-                      </span>
-                    ))}
-                    <span>{`(Case insensitive)`}</span>
-                  </>
-                }
+                type="file"
                 accept=".xls, .xlsx, .json, .csv"
                 onChange={(e) => {
                   if (e.currentTarget.files != null && e.currentTarget.files.length > 0) {
@@ -106,29 +118,55 @@ export function FileUploadModal() {
                   }
                 }}
                 required
+                disabled={isUploading || isProcessing}
               />
-              {isUploading || isProcessing && (
-                <div className="mt-4">
-                  {/* Display progress bar */}
-                  <Progress progress={progress} textLabel="Uploading..." size="lg" color="indigo" labelProgress labelText />
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Upload a excel (.xls, .xlsx), .json or .csv file. The file should contain fields namely:{" "}
+                {Object.keys(headerToObject).map((key, index) => (
+                  <span key={key}>
+                    <strong>{key}</strong>
+                    {index < Object.keys(headerToObject).length - 1 && ", "}
+                  </span>
+                ))}
+                {" "}(Case insensitive)
+              </p>
             </div>
-          </Modal.Body>
-          <Modal.Footer className="justify-end">
-            <Button color="gray" onClick={() => dispatch(setFileUploadModalStatus(false))} disabled={isUploading || isProcessing}>
+
+            {(isUploading || isProcessing) && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {isUploading ? "Uploading..." : "Processing Data..."}
+                  </span>
+                  <span className="font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="w-full" />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isUploading || isProcessing}
+            >
               Cancel
             </Button>
-            <Button isProcessing={isUploading || isProcessing} type="submit" disabled={isUploading || isProcessing}>
+            <Button type="submit" disabled={isUploading || isProcessing}>
+              {(isUploading || isProcessing) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {isUploading
                 ? "Uploading File..."
                 : isProcessing
                 ? "Processing Data..."
                 : "Upload File"}
             </Button>
-          </Modal.Footer>
+          </DialogFooter>
         </form>
-      </Modal>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

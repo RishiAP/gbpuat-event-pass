@@ -1,352 +1,448 @@
-import { Card, Progress, Button, Label } from "flowbite-react";
-import { FiEdit, FiUpload, FiCheckCircle, FiUser } from 'react-icons/fi';
-import { FaCalendarCheck, FaMailBulk } from "react-icons/fa";
-import { FaClock, FaFilePdf, FaLocationDot } from "react-icons/fa6";
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  CalendarCheck,
+  MapPin,
+  Clock,
+  FileText,
+  Mail,
+  Users,
+  Edit,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
 import Event from "@/types/Event";
-import axios from "axios";
-import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setFileUploadModalEventID, setFileUploadModalStatus } from "@/store/fileUploadModalSlice";
-import { increaseEmailsSent, setEvents, increaseInvitationsGenerated } from "@/store/eventsSlice";
-import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import {
+  setFileUploadModalEventID,
+  setFileUploadModalStatus,
+} from "@/store/fileUploadModalSlice";
+import {
+  increaseEmailsSent,
+  increaseInvitationsGenerated,
+} from "@/store/eventsSlice";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface EventCardProps {
-    event: Event;
-    onEdit: (id: string) => void;
-    onUploadData: (id: string) => void;
-  }
+  event: Event;
+  onEdit: (id: string) => void;
+}
 
-export function EventCard({ event, onEdit, onUploadData }:EventCardProps) {
+export function EventCard({ event, onEdit }: EventCardProps) {
   const [attendancePercentage, setAttendancePercentage] = useState<number>(0);
   const [emailPercentage, setEmailPercentage] = useState<number>(0);
   const [invitationPercentage, setInvitationPercentage] = useState<number>(0);
-  const fileInputRef=useRef<HTMLInputElement>(null);
   const [emailsNotSent, setEmailsNotSent] = useState<number>(0);
   const [emailSendLoading, setEmailSendLoading] = useState<boolean>(false);
-  const [invitationGenerateLoading, setInvitationGenerateLoading] = useState<boolean>(false);
-  const date=new Date(event.date);
-  const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const [invitationGenerateLoading, setInvitationGenerateLoading] =
+    useState<boolean>(false);
 
-  async function handleSendingEmail(eventId: string) {
-    console.log("Sending verification emails");
+  const dispatch = useDispatch();
+
+  const date = new Date(event.date);
+  const formattedDate = date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const timeString = `${date.getHours()}:${date
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+
+  // SSE: Send Verification Emails
+  const handleSendingEmail = async (eventId: string) => {
     setEmailSendLoading(true);
+    setEmailsNotSent(0);
+
+    const toastId = toast.loading("Sending emails...", {
+      description: "Initializing email batch process...",
+    });
 
     try {
       const response = await fetch("/api/send-verification-emails", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_id: eventId }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to start email stream");
       }
 
-      const reader = response.body?.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      if (!reader) {
-        throw new Error("Response body is not readable");
-      }
-
-      // Read the stream
       while (true) {
         const { done, value } = await reader.read();
+        if (done) break;
 
-        if (done) {
-          console.log("Email sending stream complete");
-          break;
-        }
-
-        // Decode the chunk
         const chunk = decoder.decode(value, { stream: true });
-
-        // Split by newlines to handle multiple SSE messages in one chunk
         const lines = chunk.split("\n");
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+          if (!line.startsWith("data: ")) continue;
 
-              // Handle different status types
-              switch (data.status) {
-                case "started":
-                  console.log(
-                    `Started sending emails to ${data.total} users for ${data.eventTitle}`
-                  );
-                  break;
+          try {
+            const data = JSON.parse(line.slice(6));
 
-                case "batch_started":
-                  console.log(
-                    `Email Batch ${data.batch}/${data.totalBatches} started (${data.batchSize} users)`
-                  );
-                  break;
+            switch (data.status) {
+              case "started":
+                toast.loading(`Sending to ${data.total} users...`, {
+                  id: toastId,
+                  description: `Event: ${data.eventTitle}`,
+                });
+                break;
 
-                case "batch_complete":
-                  console.log(
-                    `Email Batch ${data.batch}/${data.totalBatches} complete:`,
-                    {
-                      successful: data.batchSuccessful,
-                      failed: data.batchFailed,
-                      progress: `${data.totalProcessed}/${data.total}`,
-                    }
-                  );
-                  dispatch(
-                    increaseEmailsSent({
-                      _id: eventId,
-                      increase: data.batchSuccessful,
-                    })
-                  );
-                  break;
-
-                case "complete":
-                  console.log("All emails processed:", {
-                    total: data.total,
-                    successful: data.successful,
-                    failed: data.failed,
-                  });
-
-                  if (data.failedEmails && data.failedEmails.length > 0) {
-                    console.error("Failed emails:", data.failedEmails);
-                    toast.error(
-                      `Failed to send emails to ${data.failed} participants`
-                    );
-                  } else {
-                    toast.success(
-                      `All ${data.successful} emails sent successfully!`
-                    );
+              case "batch_complete":
+                dispatch(
+                  increaseEmailsSent({
+                    _id: eventId,
+                    increase: data.batchSuccessful,
+                  })
+                );
+                toast.loading(
+                  `Batch ${data.batch}/${data.totalBatches} complete`,
+                  {
+                    id: toastId,
+                    description: `${data.totalProcessed}/${data.total} processed`,
                   }
+                );
+                break;
 
+              case "complete":
+                toast.dismiss(toastId);
+                if (data.failed > 0) {
                   setEmailsNotSent(data.failed);
-                  break;
+                  toast.error(`Failed to send ${data.failed} emails`, {
+                    description: "Check logs for details.",
+                    icon: <XCircle className="h-4 w-4" />,
+                  });
+                } else {
+                  toast.success(`All ${data.successful} emails sent!`, {
+                    icon: <CheckCircle className="h-4 w-4" />,
+                  });
+                }
+                break;
 
-                case "error":
-                  console.error("Server error:", data.message);
-                  toast.error(`Error sending emails: ${data.message}`);
-                  break;
-
-                default:
-                  console.log("Unknown status:", data);
-              }
-            } catch (e) {
-              console.error("Error parsing SSE message:", e);
+              case "error":
+                toast.dismiss(toastId);
+                toast.error("Email sending failed", {
+                  description: data.message || "Unknown error",
+                  icon: <AlertCircle className="h-4 w-4" />,
+                });
+                break;
             }
+          } catch (e) {
+            console.error("SSE parse error:", e);
           }
         }
       }
     } catch (error) {
-      console.error("Error sending verification emails:", error);
-      toast.error("Failed to send emails. Please try again.");
+      toast.dismiss(toastId);
+      toast.error("Failed to send emails", {
+        description: "Please try again later.",
+        icon: <XCircle className="h-4 w-4" />,
+      });
     } finally {
       setEmailSendLoading(false);
     }
-  }
+  };
 
-  useEffect(()=>{
-    setAttendancePercentage(event.participants>0?(event.attended/event.participants)*100:0);
-    setEmailPercentage(event.participants>0?(event.emails_sent/event.participants)*100:0);
-    setInvitationPercentage(event.participants>0?(event.invitations_generated/event.participants)*100:0);
-  },[event.attended,event.participants,event.emails_sent, event.invitations_generated]);
-
-  useEffect(()=>{
-    if(emailsNotSent>=5){
-      toast.error(`Failed to send emails to ${emailsNotSent} participants and terminating the process.`);
-      setEmailSendLoading(false);
-    }
-  },[emailsNotSent]);
-
-  useEffect(()=>{
-    if(emailPercentage>=100){
-      if(emailSendLoading)
-      toast.success(`Emails sent to all participants`);
-      setEmailSendLoading(false);
-    }
-  },[emailPercentage]);
-
-  async function handleInvitationGeneration(eventId: string) {
-    console.log("Generating invitations");
+  // SSE: Generate Invitations
+  const handleInvitationGeneration = async (eventId: string) => {
     setInvitationGenerateLoading(true);
+
+    const toastId = toast.loading("Generating invitations...", {
+      description: "Processing participant data...",
+    });
 
     try {
       const response = await fetch("/api/generate-invitations", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_id: eventId }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to start invitation stream");
       }
 
-      const reader = response.body?.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      if (!reader) {
-        throw new Error("Response body is not readable");
-      }
-
-      // Read the stream
       while (true) {
         const { done, value } = await reader.read();
+        if (done) break;
 
-        if (done) {
-          console.log("Stream complete");
-          break;
-        }
-
-        // Decode the chunk
         const chunk = decoder.decode(value, { stream: true });
-
-        // Split by newlines to handle multiple SSE messages in one chunk
         const lines = chunk.split("\n");
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+          if (!line.startsWith("data: ")) continue;
 
-              // Handle different status types
-              switch (data.status) {
-                case "started":
-                  console.log(
-                    `Started processing ${data.total} users for ${data.eventTitle}`
-                  );
-                  break;
+          try {
+            const data = JSON.parse(line.slice(6));
 
-                case "batch_started":
-                  console.log(
-                    `Batch ${data.batch}/${data.totalBatches} started (${data.batchSize} users)`
-                  );
-                  break;
-
-                case "batch_complete":
-                  console.log(
-                    `Batch ${data.batch}/${data.totalBatches} complete:`,
-                    {
-                      successful: data.batchSuccessful,
-                      failed: data.batchFailed,
-                      progress: `${data.totalProcessed}/${data.total}`,
-                    }
-                  );
-                  dispatch(increaseInvitationsGenerated({_id:event._id,increase:data.batchSuccessful}));
-                  break;
-
-                case "complete":
-                  console.log("All invitations processed:", {
-                    total: data.total,
-                    successful: data.successful,
-                    failed: data.failed,
-                  });
-
-                  if (data.errors && data.errors.length > 0) {
-                    console.error("Errors occurred:", data.errors);
-                    // Optionally show error notification to user
-                    toast.error(
-                      `Invitation generation completed with ${data.errors.length} errors. Check console for details.`
-                    );
-                  } else {
-                    // Success notification
-                    toast.success(
-                      `All ${data.successful} invitations sent successfully!`
-                    );
-                  }
-                  break;
-
-                case "error":
-                  console.error("Server error:", data.message);
-                  toast.error(`Error generating invitations: ${data.message}`);
-                  break;
-
-                default:
-                  console.log("Unknown status:", data);
-              }
-            } catch (e) {
-              console.error("Error parsing SSE message:", e);
+            if (data.status === "batch_complete") {
+              dispatch(
+                increaseInvitationsGenerated({
+                  _id: eventId,
+                  increase: data.batchSuccessful,
+                })
+              );
+              toast.loading(
+                `Batch ${data.batch}/${data.totalBatches} complete`,
+                {
+                  id: toastId,
+                  description: `${data.totalProcessed}/${data.total} processed`,
+                }
+              );
             }
+
+            if (data.status === "complete") {
+              toast.dismiss(toastId);
+              if (data.errors?.length > 0) {
+                toast.warning(
+                  `${data.errors.length} errors during generation`,
+                  {
+                    description: "Check console for details.",
+                    icon: <AlertCircle className="h-4 w-4" />,
+                  }
+                );
+              } else {
+                toast.success(`All ${data.successful} invitations generated!`, {
+                  icon: <CheckCircle className="h-4 w-4" />,
+                });
+              }
+            }
+
+            if (data.status === "error") {
+              toast.dismiss(toastId);
+              toast.error("Invitation generation failed", {
+                description: data.message || "Unknown error",
+                icon: <XCircle className="h-4 w-4" />,
+              });
+            }
+          } catch (e) {
+            console.error("SSE parse error:", e);
           }
         }
       }
     } catch (error) {
-      console.error("Error generating invitations:", error);
-      toast.error("Failed to generate invitations. Please try again.");
+      toast.dismiss(toastId);
+      toast.error("Failed to generate invitations", {
+        description: "Please try again.",
+        icon: <XCircle className="h-4 w-4" />,
+      });
     } finally {
       setInvitationGenerateLoading(false);
     }
-  }
-  
-  const dispatch=useDispatch();
+  };
+
+  // Update percentages
+  useEffect(() => {
+    const participants = event.participants;
+    setAttendancePercentage(
+      participants > 0 ? (event.attended / participants) * 100 : 0
+    );
+    setEmailPercentage(
+      participants > 0 ? (event.emails_sent / participants) * 100 : 0
+    );
+    setInvitationPercentage(
+      participants > 0 ? (event.invitations_generated / participants) * 100 : 0
+    );
+  }, [
+    event.attended,
+    event.participants,
+    event.emails_sent,
+    event.invitations_generated,
+  ]);
+
+  // Auto-toast on failure threshold
+  useEffect(() => {
+    if (emailsNotSent >= 5) {
+      toast.error(`Failed to send ${emailsNotSent} emails`, {
+        description: "Process terminated.",
+        icon: <XCircle className="h-4 w-4" />,
+      });
+      setEmailSendLoading(false);
+    }
+  }, [emailsNotSent]);
+
+  // Auto-success when 100%
+  useEffect(() => {
+    if (emailPercentage >= 100 && emailSendLoading) {
+      toast.success("Emails sent to all participants!", {
+        icon: <CheckCircle className="h-4 w-4" />,
+      });
+      setEmailSendLoading(false);
+    }
+  }, [emailPercentage, emailSendLoading]);
+
   return (
-    <Card className="max-w-lg mt-4 shadow-lg hover:shadow-2xl transition-shadow">
-      <div className="flex justify-between gap-3 items-center mb-1">
-        <h5 className="text-xl font-bold tracking-tight text-gray-900 flex items-center">
-          <FiCheckCircle className="mr-2 text-green-600" /> <Link href={`/admin/${event._id}`}>{event.title}</Link>
-        </h5>
-        <span className={`px-3 py-1 rounded-full text-xs ${event.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          {event.status}
-        </span>
-      </div>
-
-      <p className="font-normal text-gray-700 mb-1">{event.description}</p>
-
-      <div className="flex items-center gap-1 mb-1">
-        <FaCalendarCheck className="mr-2 text-lg text-green-500" /> <span className="text-sm">{formattedDate}</span>
-      </div>
-      <div className="flex items-center gap-1 mb-1">
-        <FaLocationDot className="mr-2 text-lg text-red-600"/> <span className="text-sm">{event.location}</span>
-      </div>
-      <div className="flex items-center gap-1 mb-1">
-        <FaClock className="mr-2 text-lg text-orange-400"/> <span className="text-sm">{date.getHours()+":"+date.getMinutes()}</span>
-      </div>
-
-      {event.participants > 0 && (
-        <div className="mb-4">
-          <span className="text-sm font-medium text-gray-700 flex items-center">
-            <FiUser className="mr-2" /> Attendance:
-          </span>
-          <Progress color="green" progress={attendancePercentage} className="mt-1" />
-          <div className="text-xs text-gray-500 mt-1">
-            {attendancePercentage}% ({event.attended}/{event.participants})
-          </div>
-          <span className="text-sm font-medium text-gray-700 flex items-center mt-2">
-            <FaFilePdf className="mr-2" /> Invitations Generated:
-          </span>
-          <Progress color="purple" progress={invitationPercentage} className="mt-1" />
-          <div className="text-xs text-gray-500 mt-1">
-            {invitationPercentage}% ({event.invitations_generated}/{event.participants})
-          </div>
-          <span className="text-sm font-medium text-gray-700 flex items-center mt-2">
-            <FaMailBulk className="mr-2" /> Emails Sent:
-          </span>
-          <Progress color="blue" progress={emailPercentage} className="mt-1" />
-          <div className="text-xs text-gray-500 mt-1">
-            {emailPercentage}% ({event.emails_sent}/{event.participants})
-          </div>
-          <Button type="button" isProcessing={emailSendLoading} disabled={emailPercentage>=100} size="xs" className="mt-2" outline fullSized gradientDuoTone="purpleToPink" pill onClick={async ()=>await handleSendingEmail(event._id)}>send email</Button>
+    <Card className="w-full max-w-lg transition-shadow hover:shadow-xl">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <Link
+              href={`/admin/${event._id}`}
+              className="hover:underline hover:text-primary"
+            >
+              {event.title}
+            </Link>
+          </CardTitle>
+          <Badge
+            variant={event.status === "Active" ? "default" : "destructive"}
+          >
+            {event.status}
+          </Badge>
         </div>
-      )}
+        <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+      </CardHeader>
 
-      <div className="flex justify-evenly gap-2 mt-2">
-        <Button color="yellow" onClick={() => onEdit(event._id)}>
-          <FiEdit className="mr-2 text-lg" /> Edit Event
+      <CardContent className="space-y-4">
+        {/* Event Details */}
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <CalendarCheck className="w-4 h-4 text-green-600" />
+            <span>{formattedDate}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-red-600" />
+            <span>{event.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-orange-500" />
+            <span>{timeString}</span>
+          </div>
+        </div>
+
+        {/* Progress Stats */}
+        {event.participants > 0 && (
+          <div className="space-y-4 pt-2 border-t">
+            {/* Attendance */}
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                <Users className="w-4 h-4" />
+                Attendance
+              </div>
+              <Progress value={attendancePercentage} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>
+                  {event.attended} / {event.participants}
+                </span>
+                <span>{attendancePercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+
+            {/* Invitations */}
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                <FileText className="w-4 h-4" />
+                Invitations Generated
+              </div>
+              <Progress value={invitationPercentage} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>
+                  {event.invitations_generated} / {event.participants}
+                </span>
+                <span>{invitationPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+
+            {/* Emails */}
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                <Mail className="w-4 h-4" />
+                Emails Sent
+              </div>
+              <Progress value={emailPercentage} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>
+                  {event.emails_sent} / {event.participants}
+                </span>
+                <span>{emailPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+
+            {/* Send Email Button */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleSendingEmail(event._id)}
+              disabled={emailSendLoading || emailPercentage >= 100}
+            >
+              {emailSendLoading ? (
+                <>
+                  <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  {emailPercentage >= 100 ? "Sent" : "Send Emails"}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2 border-t">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onEdit(event._id)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              dispatch(setFileUploadModalStatus(true));
+              dispatch(setFileUploadModalEventID(event._id));
+            }}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload
+          </Button>
+        </div>
+
+        {/* Generate Invitations */}
+        <Button
+          className="w-full"
+          variant="default"
+          onClick={() => handleInvitationGeneration(event._id)}
+          disabled={invitationGenerateLoading || event.invitations_generated >= event.participants}
+        >
+          {invitationGenerateLoading ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-4 w-4" />
+              {event.invitations_generated >= event.participants
+                ? "Generated"
+                : "Generate Invitations"}
+            </>
+          )}
         </Button>
-        <Button color="purple" onClick={()=>{dispatch(setFileUploadModalStatus(true)); dispatch(setFileUploadModalEventID(event._id))}}>
-          <FiUpload className="mr-2 text-lg" /> Upload Data
-        </Button>
-      </div>
-      <Button color="red" className="mt-4 w-full" isProcessing={invitationGenerateLoading} disabled={invitationGenerateLoading} onClick={async ()=>await handleInvitationGeneration(event._id)}>
-        <FaFilePdf className="mr-2" />
-        Generate Invitations
-      </Button>
+      </CardContent>
     </Card>
   );
 }

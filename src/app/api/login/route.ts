@@ -9,10 +9,10 @@ connect();
 
 export async function POST(req:NextRequest){
     try{
-        const {email,password,type}=await req.json();
+        const {identifier,password,type}=await req.json();
         let token,serialized;
         if(type==="admin"){
-            const admin=await Admin.findOne({$or:[{email},{username:email}]});
+            const admin=await Admin.findOne({$or:[{email:identifier},{username:identifier}]});
             if(admin==null || !bcrypt.compareSync(password,admin.password)){
                 return NextResponse.json({error:"Invalid credentials"},{status:401});
             }
@@ -30,7 +30,8 @@ export async function POST(req:NextRequest){
             });
         }
         else if(type==="verifier"){
-            const verifier=await Verifier.findOne({username:email});
+            console.log(identifier,password);
+            const verifier=await Verifier.findOne({username:identifier});
             if(verifier==null || jwt.verify(verifier.password,String(process.env.JWT_VERIFIER_PASSWORD_ENCRYPTION_SECRET))!=password){
                 return NextResponse.json({error:"Invalid credentials"},{status:401});
             }

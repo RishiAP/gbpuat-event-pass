@@ -1,13 +1,23 @@
 "use client";
 
 import Verifier from "@/types/Verifier";
-import { Button, FloatingLabel, Modal } from "flowbite-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FormEvent, useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setVerifiers } from "@/store/verifiersSlice";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface VerifierModalProps {
   verifier?: Verifier;
@@ -27,12 +37,16 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
   };
 
   useEffect(() => {
-    if (verifier) setFormData({ name: verifier.name, username: verifier.username });
-  },[verifier]);
+    if (verifier) {
+      setFormData({ name: verifier.name, username: verifier.username, password: "" });
+    } else {
+      setFormData(initialVerifier);
+    }
+  }, [verifier, isOpen]);
 
   const [formData, setFormData] = useState<Partial<Verifier>>(initialVerifier);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -41,69 +55,113 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
     axios({
       method: verifier ? "PUT" : "POST",
       url: "/api/admin",
-      data: verifier?{ ...formData, type: "verifier", _id: verifier._id }:{ ...formData, type: "verifier" },
-    }).then((res) => {
-      onClose();
-      if(verifier)
-        onVerifierUpdated({ ...verifier, ...formData });
-      else
-        dispatch(setVerifiers([...verifiers, { name: formData.name, username: formData.username, _id: res.data._id }]));
-      setFormData(initialVerifier);
-      toast.success(`Verifier ${verifier ? "updated" : "added"} successfully`, { theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light" });
-    }).catch((err) => {
-      if(verifier)
-        toast.error(`Failed to update verifier: ${err.response.data.message}`);
-      else
-        toast.error(`Failed to add verifier: ${err.response.data.message}`);
-      console.error(err);
-    }).finally(() => setLoading(false));
+      data: verifier 
+        ? { ...formData, type: "verifier", _id: verifier._id } 
+        : { ...formData, type: "verifier" },
+    })
+      .then((res) => {
+        onClose();
+        if (verifier) {
+          onVerifierUpdated({ ...verifier, ...formData });
+        } else {
+          dispatch(setVerifiers([
+            ...verifiers, 
+            { name: formData.name, username: formData.username, _id: res.data._id }
+          ]));
+        }
+        setFormData(initialVerifier);
+        toast.success(`Verifier ${verifier ? "updated" : "added"} successfully`);
+      })
+      .catch((err) => {
+        const action = verifier ? "update" : "add";
+        toast.error(`Failed to ${action} verifier: ${err.response?.data?.message || "Unknown error"}`);
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
   };
 
+  function handleClose() {
+    if (!loading) {
+      onClose();
+    }
+  }
+
   return (
-    <Modal show={loading || isOpen} onClose={onClose} dismissible>
-      <Modal.Header>{verifier ? "Edit Verifier" : "Add Verifier"}</Modal.Header>
-      <form onSubmit={handleFormSubmit}>
-        <Modal.Body>
-          <div className="space-y-6">
-            <FloatingLabel
-              variant="standard"
-              label="Name"
-              value={formData.name || ""}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <FloatingLabel
-              variant="standard"
-              label="Username"
-              value={formData.username || ""}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
-            />
-            <div className="relative">
-              <FloatingLabel
-                variant="standard"
-                label="Password"
-                type={showPassword ? "text" : "password"} // Change type based on state
-                value={formData.password || ""}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required={!verifier}
+    <Dialog open={loading || isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{verifier ? "Edit Verifier" : "Add Verifier"}</DialogTitle>
+          <DialogDescription>
+            {verifier 
+              ? "Update the verifier details below." 
+              : "Create a new verifier by filling in the details below."}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleFormSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter verifier name"
+                value={formData.name || ""}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
               />
-              <span
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 text-xl"
-                onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                placeholder="Enter username"
+                value={formData.username || ""}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password {verifier && <span className="text-xs text-muted-foreground">(leave empty to keep current)</span>}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={verifier ? "Enter new password (optional)" : "Enter password"}
+                  value={formData.password || ""}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!verifier}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
           </div>
-        </Modal.Body>
-        <Modal.Footer className="justify-end">
-          <Button color="gray" onClick={onClose}>Cancel</Button>
-          <Button type="submit" isProcessing={loading}>
-            {loading ? "Adding..." : verifier ? "Update Verifier" : "Add Verifier"}
-          </Button>
-        </Modal.Footer>
-      </form>
-    </Modal>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? (verifier ? "Updating..." : "Adding...") : verifier ? "Update Verifier" : "Add Verifier"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

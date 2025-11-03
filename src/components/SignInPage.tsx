@@ -1,111 +1,231 @@
-// pages/page.tsx
 "use client";
-import axios from 'axios';
-import { Card, Label, TextInput, Button, Checkbox } from 'flowbite-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineLoading } from 'react-icons/ai';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/ReactToastify.min.css';
 
-export default function SignInPage({type}:{type:"verifier"|"admin"}) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading,setLoading]=useState(false);
-  const router=useRouter();
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import axios, { AxiosError } from "axios";
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    // Handle the sign-in logic here
-    axios.post('/api/login', { email, password,type })
-      .then((response) => {
-        console.log(response.data);
-        toast.success(<p><strong>{response.data.message}.</strong> Redirecting to dashboard.</p>,{theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light"});
-          window.location.pathname=`/${type}`;
-      })
-      .catch((error) => {
-        console.error(error);
-        toast.error(error.response.data.error,{theme: document.querySelector("html")?.classList.contains("dark") ? "dark" : "light"});
-      }).finally(()=>{
-        setLoading(false);
-      });
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+// ──────────────────────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────────────────────
+type UserRole = "admin" | "verifier";
+
+interface SignInPageProps {
+  type: UserRole;
+}
+
+/** Sent to the backend – ONE field name */
+interface LoginPayload {
+  identifier: string;
+  password: string;
+  type: UserRole;
+}
+
+interface LoginResponse {
+  message: string;
+}
+interface ErrorResponse {
+  error: string;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Schema
+// ──────────────────────────────────────────────────────────────
+const createSignInSchema = (type: UserRole) =>
+  z.object({
+    identifier:
+      type === "admin"
+        ? z.email("Invalid email address")
+        : z.string().min(3, "Username too short"),
+    password: z.string().min(6, "Password too short"),
+    rememberMe: z.boolean(),
+  });
+
+type SignInFormData = z.infer<ReturnType<typeof createSignInSchema>>;
+
+// ──────────────────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────────────────
+export default function SignInPage({ type }: SignInPageProps) {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const router = useRouter();
+  const isAdmin = type === "admin";
+  const schema = createSignInSchema(type);
+
+  const form = useForm<SignInFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      identifier: "",
+      password: "",
+      rememberMe: false,
+    },
+  });
+
+  // ────── Submit ──────
+  const onSubmit = async (data: SignInFormData): Promise<void> => {
+    const toastId = toast.loading("Signing in...");
+
+    try {
+      const payload: LoginPayload = {
+        identifier: data.identifier,   // ← SAME KEY for both roles
+        password: data.password,
+        type,
+      };
+
+      const res = await axios.post<LoginResponse>("/api/login", payload);
+
+      toast.dismiss(toastId);
+      toast.success(res.data.message, { description: "Redirecting..." });
+
+      setTimeout(() => {
+        window.location.pathname = `/${type}`;
+      }, 1500);
+    } catch (error) {
+      toast.dismiss(toastId);
+      const msg =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Login failed";
+      toast.error(msg);
+    }
   };
 
-  const handleResetPassword = () => {
-    // Handle password reset logic here
-    alert('Redirecting to password reset page...');
-  };
+  // ────── Helpers ──────
+  const togglePasswordVisibility = () => setShowPassword((p) => !p);
+  const handleForgotPassword = () => toast.info("Password reset coming soon!");
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const title = `${type.charAt(0).toUpperCase() + type.slice(1)} Sign In`;
+  const inputLabel = isAdmin ? "Email" : "Username";
+  const inputType = isAdmin ? "email" : "text";
+  const placeholder = isAdmin ? "user@example.com" : "your_username";
 
+  // ────── Render ──────
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gray-100 px-3">
-      <Card className="w-full max-w-md shadow-lg">
-        <h2 className="text-2xl font-semibold text-center mb-4">{type.charAt(0).toUpperCase()+type.substring(1)} Sign In</h2>
-        
-        <form onSubmit={handleSignIn}>
-          {/* Email Input */}
-          <div className="mb-4">
-            <Label htmlFor="email" value={type==="admin"?"Email":"Username"} />
-            <TextInput
-              id="email"
-              type={type==="admin"?"email":"text"}
-              placeholder={type==="admin"?"user@example.com":"username"}
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">{title}</CardTitle>
+        </CardHeader>
 
-          {/* Password Input with Show Password Feature */}
-          <div className="mb-4 relative">
-            <Label htmlFor="password" value="Password" />
-            <div className="relative">
-              <TextInput
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Identifier */}
+              <FormField
+                control={form.control}
+                name="identifier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{inputLabel}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type={inputType}
+                        placeholder={placeholder}
+                        disabled={form.formState.isSubmitting}
+                        {...field}
+                        className="h-11"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-3 flex items-center text-gray-600"
-                onClick={togglePasswordVisibility}
+
+              {/* Password */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          disabled={form.formState.isSubmitting}
+                          {...field}
+                          className="h-11 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={togglePasswordVisibility}
+                          className="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Remember Me */}
+              <FormField
+                control={form.control}
+                name="rememberMe"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={form.formState.isSubmitting}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal cursor-pointer">Remember me</FormLabel>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </FormItem>
+                )}
+              />
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={form.formState.isSubmitting}
               >
-                {showPassword ? <AiOutlineEyeInvisible size={24} /> : <AiOutlineEye size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Remember Me and Reset Password */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              <Checkbox id="remember" />
-              <Label htmlFor="remember" className="ml-2">Remember me</Label>
-            </div>
-
-            <button
-              type="button"
-              className="text-sm text-blue-600 hover:underline"
-              onClick={handleResetPassword}
-            >
-              Reset Password
-            </button>
-          </div>
-
-          {/* Sign-in Button */}
-          <Button type="submit" fullSized isProcessing={loading} processingSpinner={<AiOutlineLoading className="h-6 w-6 animate-spin"/>} >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </Button>
-        </form>
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
       </Card>
-      <ToastContainer draggable draggablePercent={60} position='top-center'/>
     </div>
   );
 }
