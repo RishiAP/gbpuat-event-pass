@@ -1,12 +1,16 @@
 "use client";
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import Image from 'next/image';
-import User from '@/types/User';
-import axios from 'axios';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
+import User from "@/types/User";
+import axios from "axios";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 interface UserCardProps {
   user: User;
@@ -16,31 +20,37 @@ interface UserCardProps {
   setVerifying: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, setUser, event_id, verifying, setVerifying }) => {
+const UserCard: React.FC<UserCardProps> = ({
+  user,
+  setUser,
+  event_id,
+  verifying,
+  setVerifying,
+}) => {
   const [currentStatus, setCurrentStatus] = useState<boolean>(false);
-  
+
   const formatDateTime = (input: Date | string): string => {
-    const date = typeof input === 'string' ? new Date(input) : input;
-  
-    if (isNaN(date.getTime())) {
-      throw new Error('Invalid date');
-    }
-  
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = date.toLocaleString('default', { month: 'short' });
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-  
-    return `${day} ${month}, ${year} at ${hours}:${minutes}`;
+    const date = typeof input === "string" ? new Date(input) : input;
+    if (isNaN(date.getTime())) return "Invalid Date";
+
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
-  
-  function verifyUser() {
+
+  const verifyUser = async () => {
     setVerifying(true);
-    axios.put(`/api/verify`, {
-      user_id: user._id,
-      event_id: event_id
-    }).then(res => {
+    try {
+      const res = await axios.put("/api/verify", {
+        user_id: user._id,
+        event_id,
+      });
+
       if (res.status === 201) {
         toast.success(res.data.message);
         setCurrentStatus(true);
@@ -50,149 +60,149 @@ const UserCard: React.FC<UserCardProps> = ({ user, setUser, event_id, verifying,
             ...user.events,
             [event_id]: {
               ...user.events[event_id],
-              entry_time: res.data.time
-            }
-          }
+              status: true,
+              entry_time: res.data.time,
+            },
+          },
         });
-      } else {
-        toast.error(res.data.message || "An error occurred");
       }
-    }).catch(err => {
-      toast.error("An error occurred");
-      console.log(err);
-    }).finally(() => {
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Verification failed");
+    } finally {
       setVerifying(false);
-    });
-  }
+    }
+  };
+
+  const event = user.events[event_id];
+  const isVerified = event?.status || currentStatus;
+  const belongsToThisGate = user.same_gate;
+  const canVerify = !isVerified && belongsToThisGate;
 
   return (
-    <Card className="max-w-sm  shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
-      <CardContent className="pt-3">
-        <div className="flex flex-col w-full">
-          <div className="w-48 h-auto mb-4 flex justify-center w-full text-center mx-auto">
-            <Image
-              src={user.photo != null ? user.photo : "https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png"}
-              alt={`${user.name}'s profile photo`}
-              width={192}
-              height={192}
-              className="w-48 h-auto rounded-lg"
+    <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-20 w-20 ring-2 ring-primary/10">
+            <AvatarImage
+              src={
+                user.photo ||
+                "https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png"
+              }
             />
+            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
           </div>
-          
-          <h3 className="text-xl font-semibold text-center">{user.name}</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-center">{user.email}</p>
-          
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* Personal Info Grid */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
           {user.college_id && (
-            <div className="mt-2 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 w-2/5">College ID</span>
-              <span>:</span>
-              <span className="w-3/5 ms-3">{user.college_id}</span>
-            </div>
-          )}
-          
-          {user.hostel && (
-            <div className="mt-2 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 w-2/5">Hostel</span>
-              <span>:</span>
-              <span className="w-3/5 ms-3">{user.hostel.name}</span>
-            </div>
-          )}
-          
-          <div className="mt-2 flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400 w-2/5">Aadhar</span>
-            <span>:</span>
-            <span className="w-3/5 ms-3">{user.aadhar}</span>
-          </div>
-          
-          {user.college && (
-            <div className="mt-2 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 w-2/5">College</span>
-              <span>:</span>
-              <span className="w-3/5 ms-3">{user.college.name}</span>
-            </div>
-          )}
-          
-          {user.department && (
-            <div className="mt-2 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 w-2/5">Department</span>
-              <span>:</span>
-              <span className="w-3/5 ms-3">{user.department.name}</span>
-            </div>
-          )}
-          
-          {user.designation && (
-            <div className="mt-2 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400 w-2/5">Designation</span>
-              <span>:</span>
-              <span className="w-3/5 ms-3">{user.designation}</span>
-            </div>
-          )}
-          
-          {user.events[event_id] && (
             <>
-              <div className="mt-2 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400 w-2/5">Main Gate</span>
-                <span>:</span>
-                <span className={`w-3/5 ms-3 ${user.same_gate ? "text-green-500" : "text-blue-600"}`}>
-                  <strong>{user.events[event_id]?.verifier.name}</strong>
-                </span>
-              </div>
-              
-              <div className="mt-2 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400 w-2/5">Entry Gate</span>
-                <span>:</span>
-                <span className="w-3/5 ms-3">{user.events[event_id].entry_gate}</span>
-              </div>
-              
-              <div className="mt-2 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400 w-2/5">Enclosure No.</span>
-                <span>:</span>
-                <span className="w-3/5 ms-3">{user.events[event_id].enclosure_no}</span>
-              </div>
-              
-              <div className="mt-2 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400 w-2/5">Status</span>
-                <span>:</span>
-                <span className={`w-3/5 ms-3 ${
-                  !user.events[event_id].status
-                    ? !user.same_gate
-                      ? "text-red-600"
-                      : currentStatus
-                      ? "text-green-500"
-                      : "text-blue-500"
-                    : "text-red-600"
-                }`}>
-                  {!user.events[event_id].status
-                    ? !user.same_gate
-                      ? <span>Belongs to gate <strong>{user.events[event_id]?.verifier.name}</strong></span>
-                      : currentStatus
-                      ? "Verified"
-                      : "Not verified"
-                    : "Already Verified"}
-                </span>
-              </div>
-              
-              {user.events[event_id].entry_time && (
-                <div className="mt-2 flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400 w-2/5">Time of Entry</span>
-                  <span>:</span>
-                  <span className="w-3/5 ms-3">{formatDateTime(user.events[event_id].entry_time)}</span>
-                </div>
-              )}
-              
-              {!user.events[event_id].status && user.same_gate && !currentStatus && (
-                <Button
-                  className="mt-4 w-full bg-gradient-to-r from-green-400 to-blue-500 hover:from-green-500 hover:to-blue-600"
-                  onClick={verifyUser}
-                  disabled={verifying}
-                >
-                  {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {verifying ? "Verifying..." : "Verify"}
-                </Button>
-              )}
+              <span className="text-muted-foreground">College ID</span>
+              <span className="font-medium">{user.college_id}</span>
+            </>
+          )}
+          {user.aadhar && (
+            <>
+              <span className="text-muted-foreground">Aadhar</span>
+              <span className="font-mono">{user.aadhar}</span>
+            </>
+          )}
+          {user.hostel && (
+            <>
+              <span className="text-muted-foreground">Hostel</span>
+              <span className="font-medium">{user.hostel.name}</span>
+            </>
+          )}
+          {user.college && (
+            <>
+              <span className="text-muted-foreground">College</span>
+              <span className="font-medium">{user.college.name}</span>
+            </>
+          )}
+          {user.department && (
+            <>
+              <span className="text-muted-foreground">Department</span>
+              <span className="font-medium">{user.department.name}</span>
+            </>
+          )}
+          {user.designation && (
+            <>
+              <span className="text-muted-foreground">Designation</span>
+              <span className="font-medium">{user.designation}</span>
             </>
           )}
         </div>
+
+        <Separator />
+
+        {/* Event Info */}
+        {event && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <span className="text-muted-foreground">Main Gate</span>
+              <span className="font-medium">{event.verifier.name}</span>
+
+              <span className="text-muted-foreground">Entry Gate</span>
+              <span className="font-medium">{event.entry_gate}</span>
+
+              <span className="text-muted-foreground">Enclosure</span>
+              <span className="font-medium">#{event.enclosure_no}</span>
+
+              <span className="text-muted-foreground">Status</span>
+              <div className="flex items-center gap-1">
+                {isVerified ? (
+                  <Badge variant="default" className="bg-green-500">
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                    Verified
+                  </Badge>
+                ) : belongsToThisGate ? (
+                  <Badge variant="secondary">
+                    <AlertCircle className="mr-1 h-3 w-3" />
+                    Ready to Verify
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <XCircle className="mr-1 h-3 w-3" />
+                    Wrong Gate
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {event.entry_time && (
+              <div className="text-xs text-muted-foreground">
+                Verified at: {formatDateTime(event.entry_time)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Verify Button */}
+        {canVerify && (
+          <Button
+            onClick={verifyUser}
+            disabled={verifying}
+            className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+          >
+            {verifying ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Verify Entry
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
