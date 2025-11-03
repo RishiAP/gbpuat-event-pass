@@ -205,7 +205,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <Button
             onClick={verifyUser}
             disabled={verifying}
-            className="w-full mt-2 bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="w-full mt-2 bg-green-500 hover:bg-green-600"
           >
             {verifying ? (
               <>
