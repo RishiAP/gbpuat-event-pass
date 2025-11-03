@@ -106,9 +106,9 @@ const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-2 text-center pt-4">
+      <CardHeader className="pb-2 text-center pt-3">
         {/* 3:4 Portrait Photo - 144×192 */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-2">
           <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden rounded-sm">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
@@ -129,13 +129,13 @@ const UserCard: React.FC<UserCardProps> = ({
         {/* Name & Email */}
         <div className="mt-2">
           <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-base text-muted-foreground">{user.email}</p>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-3 pt-1">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-base">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
@@ -178,7 +178,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <>
             <Separator className="my-2" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium">{event.verifier.name}</span>
 
@@ -193,7 +193,7 @@ const UserCard: React.FC<UserCardProps> = ({
             </div>
 
             {event.entry_time && (
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Verified: {formatDateTime(event.entry_time)}
               </p>
             )}
@@ -205,17 +205,16 @@ const UserCard: React.FC<UserCardProps> = ({
           <Button
             onClick={verifyUser}
             disabled={verifying}
-            size="sm"
-            className="w-full mt-2 text-xs h-8 bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="w-full mt-2 bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           >
             {verifying ? (
               <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Verifying...
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-3 w-3 mr-1" />
+                <CheckCircle2 className="h-4 w-4 mr-2" />
                 Verify Entry
               </>
             )}
