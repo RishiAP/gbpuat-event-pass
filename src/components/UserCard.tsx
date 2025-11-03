@@ -90,7 +90,7 @@ const UserCard: React.FC<UserCardProps> = ({
     if (!belongsToThisGate) {
       return (
         <Badge variant="outline" className="h-5 text-[10px] px-1.5 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400">
-          <AlertCircle className="h-2.5 w-2.5 mr-0.arton" />
+          <AlertCircle className="h-2.5 w-2.5 mr-0.5" />
           Belongs to Gate <strong>{event.verifier.name}</strong>
         </Badge>
       );
@@ -106,10 +106,10 @@ const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-2 text-center">
+      <CardHeader className="pb-2 text-center pt-4">
         {/* 3:4 Portrait Photo - 144×192 */}
-        <div className="flex justify-center -mt-14">
-          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden">
+        <div className="flex justify-center mb-3">
+          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden rounded-sm">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
                 src={
@@ -127,7 +127,7 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         {/* Name & Email */}
-        <div className="mt-3">
+        <div className="mt-2">
           <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
@@ -135,7 +135,7 @@ const UserCard: React.FC<UserCardProps> = ({
 
       <CardContent className="space-y-3 pt-1">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
@@ -178,7 +178,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <>
             <Separator className="my-2" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium">{event.verifier.name}</span>
 
