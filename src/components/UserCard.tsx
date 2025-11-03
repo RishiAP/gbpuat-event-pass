@@ -17,6 +17,7 @@ interface UserCardProps {
   event_id: string;
   verifying: boolean;
   setVerifying: React.Dispatch<React.SetStateAction<boolean>>;
+  setSuccessToastId: React.Dispatch<React.SetStateAction<string | number | null>>;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -25,6 +26,7 @@ const UserCard: React.FC<UserCardProps> = ({
   event_id,
   verifying,
   setVerifying,
+  setSuccessToastId
 }) => {
   const [currentStatus, setCurrentStatus] = useState<boolean>(false);
 
@@ -50,7 +52,9 @@ const UserCard: React.FC<UserCardProps> = ({
       });
 
       if (res.status === 201) {
-        toast.success(res.data.message);
+        setSuccessToastId(
+          toast.success(res.data.message, { duration: Infinity })
+        );
         setCurrentStatus(true);
         setUser({
           ...user,

@@ -20,6 +20,7 @@ const EventVerifyPage = ({ params }: { params: Promise<{ event: string }> }) => 
   const [user, setUser] = useState<null | User>(null);
   const [event, setEvent] = useState<null | Event>(null);
   const [verifying, setVerifying] = useState(false);
+  const [successToastId, setSuccessToastId] = useState<string | number | null>(null);
 
   useEffect(() => {
     axios
@@ -56,6 +57,10 @@ const EventVerifyPage = ({ params }: { params: Promise<{ event: string }> }) => 
   }, [qrData, paramsResolved.event]);
 
   const handleRescan = () => {
+    if(successToastId) {
+      toast.dismiss(successToastId);
+      setSuccessToastId(null);
+    }
     setIsScannerActive(true);
     setQRData(null);
   };
@@ -86,6 +91,7 @@ const EventVerifyPage = ({ params }: { params: Promise<{ event: string }> }) => 
                   event_id={paramsResolved.event}
                   verifying={verifying}
                   setVerifying={setVerifying}
+                  setSuccessToastId={setSuccessToastId}
                 />
               ) : null}
               <Button
