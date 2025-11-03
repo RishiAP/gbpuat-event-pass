@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Image from "next/image";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import User from "@/types/User";
 import axios from "axios";
 import { useState } from "react";
@@ -80,26 +79,35 @@ const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20 ring-2 ring-primary/10">
-            <AvatarImage
-              src={
-                user.photo ||
-                "https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png"
-              }
-            />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+      <CardHeader className="pb-3 text-center">
+        {/* Big Rectangular Photo */}
+        <div className="flex justify-center -mt-16">
+          <div className="w-48 h-64 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-none overflow-hidden shadow-xl">
+            <Avatar className="h-full w-full rounded-none">
+              <AvatarImage
+                src={
+                  user.photo ||
+                  "https://res.cloudinary.com/dnxfq38fr/image/upload/v1729400669/gbpuat-event-pass/viukl6evcdn1aj7rgqbb.png"
+                }
+                alt={user.name}
+                className="object-cover w-full h-full"
+              />
+              <AvatarFallback className="text-4xl bg-muted rounded-none flex items-center justify-center">
+                {user.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
           </div>
+        </div>
+
+        {/* Name & Email */}
+        <div className="mt-6">
+          <h3 className="text-2xl font-bold text-foreground">{user.name}</h3>
+          <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Personal Info Grid */}
+        {/* Personal Info */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           {user.college_id && (
             <>
@@ -151,8 +159,8 @@ const UserCard: React.FC<UserCardProps> = ({
               <span className="text-muted-foreground">Entry Gate</span>
               <span className="font-medium">{event.entry_gate}</span>
 
-              <span className="text-muted-foreground">Enclosure</span>
-              <span className="font-medium">#{event.enclosure_no}</span>
+              <span className="text-muted-foreground">Enclosure No.</span>
+              <span className="font-medium">{event.enclosure_no}</span>
 
               <span className="text-muted-foreground">Status</span>
               <div className="flex items-center gap-1">
@@ -169,7 +177,7 @@ const UserCard: React.FC<UserCardProps> = ({
                 ) : (
                   <Badge variant="destructive">
                     <XCircle className="mr-1 h-3 w-3" />
-                    Wrong Gate
+                    Belongs to Gate <strong>{event.verifier.name}</strong>
                   </Badge>
                 )}
               </div>
@@ -183,12 +191,19 @@ const UserCard: React.FC<UserCardProps> = ({
           </div>
         )}
 
+        {/* Subtle Footer */}
+        <div className="relative -mx-6 -mb-6 mt-4 bg-muted/50 backdrop-blur-sm rounded-b-xl">
+          <div className="px-6 py-3 text-center text-xs text-muted-foreground">
+            GBPUAT Event Verification System
+          </div>
+        </div>
+
         {/* Verify Button */}
         {canVerify && (
           <Button
             onClick={verifyUser}
             disabled={verifying}
-            className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           >
             {verifying ? (
               <>
