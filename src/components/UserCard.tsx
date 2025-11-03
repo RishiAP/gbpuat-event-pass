@@ -108,8 +108,8 @@ const UserCard: React.FC<UserCardProps> = ({
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
       <CardHeader className="pb-2 text-center pt-3">
         {/* 3:4 Portrait Photo - 144×192 */}
-        <div className="flex justify-center mb-2">
-          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden rounded-sm">
+        <div className="flex justify-center mb-1">
+          <div className="w-36 h-48 bg-muted/20 overflow-hidden rounded-sm">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
                 src={
@@ -127,9 +127,9 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         {/* Name & Email */}
-        <div className="mt-2">
+        <div className="mt-1">
           <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
-          <p className="text-base text-muted-foreground">{user.email}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{user.email}</p>
         </div>
       </CardHeader>
 
@@ -178,7 +178,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <>
             <Separator className="my-2" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium">{event.verifier.name}</span>
 
