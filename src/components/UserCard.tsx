@@ -109,7 +109,7 @@ const UserCard: React.FC<UserCardProps> = ({
       <CardHeader className="pb-2 text-center">
         {/* 3:4 Portrait Photo - 144×192 */}
         <div className="flex justify-center mb-1">
-          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden rounded-sm">
+          <div className="w-36 h-48 overflow-hidden rounded-sm">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
                 src={
