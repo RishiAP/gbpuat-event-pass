@@ -135,7 +135,7 @@ const UserCard: React.FC<UserCardProps> = ({
 
       <CardContent className="space-y-3">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
@@ -178,7 +178,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <>
             <Separator className="my-1.5" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-center">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium wrap-break-words">{event.verifier.name}</span>
 
