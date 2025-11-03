@@ -135,7 +135,7 @@ const UserCard: React.FC<UserCardProps> = ({
 
       <CardContent className="space-y-3">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
@@ -178,7 +178,7 @@ const UserCard: React.FC<UserCardProps> = ({
           <>
             <Separator className="my-1.5" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium wrap-break-words">{event.verifier.name}</span>
 
@@ -189,7 +189,7 @@ const UserCard: React.FC<UserCardProps> = ({
               <span className="font-medium wrap-break-words">{event.enclosure_no}</span>
 
               <span className="text-muted-foreground">Status</span>
-              <div className="flex items-center justify-center gap-1">{getStatusBadge()}</div>
+              <div className="flex items-center gap-1">{getStatusBadge()}</div>
             </div>
 
             {event.entry_time && (
