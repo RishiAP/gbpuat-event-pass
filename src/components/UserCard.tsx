@@ -31,7 +31,6 @@ const UserCard: React.FC<UserCardProps> = ({
   const formatDateTime = (input: Date | string): string => {
     const date = typeof input === "string" ? new Date(input) : input;
     if (isNaN(date.getTime())) return "Invalid Date";
-
     return date.toLocaleString("en-US", {
       day: "2-digit",
       month: "short",
@@ -77,12 +76,40 @@ const UserCard: React.FC<UserCardProps> = ({
   const belongsToThisGate = user.same_gate;
   const canVerify = !isVerified && belongsToThisGate;
 
+  // Status Badge Logic
+  const getStatusBadge = () => {
+    if (isVerified) {
+      return (
+        <Badge variant="destructive" className="h-5 text-[10px] px-1.5">
+          <XCircle className="h-2.5 w-2.5 mr-0.5" />
+          Already Verified
+        </Badge>
+      );
+    }
+
+    if (!belongsToThisGate) {
+      return (
+        <Badge variant="outline" className="h-5 text-[10px] px-1.5 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400">
+          <AlertCircle className="h-2.5 w-2.5 mr-0.arton" />
+          Belongs to Gate <strong>{event.verifier.name}</strong>
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-green-500">
+        <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+        Ready to Verify
+      </Badge>
+    );
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-3 text-center">
-        {/* Big Rectangular Photo */}
-        <div className="flex justify-center -mt-16">
-          <div className="w-48 h-64 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-none overflow-hidden shadow-xl">
+      <CardHeader className="pb-2 text-center">
+        {/* 3:4 Portrait Photo - 144×192 */}
+        <div className="flex justify-center -mt-14">
+          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
                 src={
@@ -92,7 +119,7 @@ const UserCard: React.FC<UserCardProps> = ({
                 alt={user.name}
                 className="object-cover w-full h-full"
               />
-              <AvatarFallback className="text-4xl bg-muted rounded-none flex items-center justify-center">
+              <AvatarFallback className="text-3xl bg-muted rounded-none flex items-center justify-center">
                 {user.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
@@ -100,59 +127,58 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
 
         {/* Name & Email */}
-        <div className="mt-6">
-          <h3 className="text-2xl font-bold text-foreground">{user.name}</h3>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+        <div className="mt-3">
+          <h3 className="text-xl font-bold text-foreground">{user.name}</h3>
+          <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 pt-1">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
-              <span className="font-medium">{user.college_id}</span>
+              <span className="font-medium truncate">{user.college_id}</span>
             </>
           )}
           {user.aadhar && (
             <>
               <span className="text-muted-foreground">Aadhar</span>
-              <span className="font-mono">{user.aadhar}</span>
+              <span className="font-mono tabular-nums">{user.aadhar}</span>
             </>
           )}
           {user.hostel && (
             <>
               <span className="text-muted-foreground">Hostel</span>
-              <span className="font-medium">{user.hostel.name}</span>
+              <span className="font-medium truncate">{user.hostel.name}</span>
             </>
           )}
           {user.college && (
             <>
               <span className="text-muted-foreground">College</span>
-              <span className="font-medium">{user.college.name}</span>
+              <span className="font-medium truncate">{user.college.name}</span>
             </>
           )}
           {user.department && (
             <>
               <span className="text-muted-foreground">Department</span>
-              <span className="font-medium">{user.department.name}</span>
+              <span className="font-medium truncate">{user.department.name}</span>
             </>
           )}
           {user.designation && (
             <>
               <span className="text-muted-foreground">Designation</span>
-              <span className="font-medium">{user.designation}</span>
+              <span className="font-medium truncate">{user.designation}</span>
             </>
           )}
         </div>
 
-        <Separator />
-
-        {/* Event Info */}
         {event && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+          <>
+            <Separator className="my-2" />
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               <span className="text-muted-foreground">Main Gate</span>
               <span className="font-medium">{event.verifier.name}</span>
 
@@ -163,56 +189,33 @@ const UserCard: React.FC<UserCardProps> = ({
               <span className="font-medium">{event.enclosure_no}</span>
 
               <span className="text-muted-foreground">Status</span>
-              <div className="flex items-center gap-1">
-                {isVerified ? (
-                  <Badge variant="default" className="bg-green-500">
-                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                    Verified
-                  </Badge>
-                ) : belongsToThisGate ? (
-                  <Badge variant="secondary">
-                    <AlertCircle className="mr-1 h-3 w-3" />
-                    Ready to Verify
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive">
-                    <XCircle className="mr-1 h-3 w-3" />
-                    Belongs to Gate <strong>{event.verifier.name}</strong>
-                  </Badge>
-                )}
-              </div>
+              <div className="flex items-center gap-1">{getStatusBadge()}</div>
             </div>
 
             {event.entry_time && (
-              <div className="text-xs text-muted-foreground">
-                Verified at: {formatDateTime(event.entry_time)}
-              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Verified: {formatDateTime(event.entry_time)}
+              </p>
             )}
-          </div>
+          </>
         )}
-
-        {/* Subtle Footer */}
-        <div className="relative -mx-6 -mb-6 mt-4 bg-muted/50 backdrop-blur-sm rounded-b-xl">
-          <div className="px-6 py-3 text-center text-xs text-muted-foreground">
-            GBPUAT Event Verification System
-          </div>
-        </div>
 
         {/* Verify Button */}
         {canVerify && (
           <Button
             onClick={verifyUser}
             disabled={verifying}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            size="sm"
+            className="w-full mt-2 text-xs h-8 bg-linear-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           >
             {verifying ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                 Verifying...
               </>
             ) : (
               <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
+                <CheckCircle2 className="h-3 w-3 mr-1" />
                 Verify Entry
               </>
             )}
