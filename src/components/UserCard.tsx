@@ -67,7 +67,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, setUser, event_id, verifying,
 
   return (
     <Card className="max-w-sm bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
-      <CardContent className="pt-6">
+      <CardContent className="pt-3">
         <div className="flex flex-col w-full">
           <div className="w-48 h-auto mb-4 flex justify-center w-full text-center mx-auto">
             <Image

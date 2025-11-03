@@ -20,6 +20,9 @@ const AdminEventPage: React.FC<AdminEventPageProps> = ({ event }) => {
   const [emailsSentPercentage, setEmailsSentPercentage] = useState<number>(
     event.participants > 0 ? Math.min((event.emails_sent / event.participants) * 100, 100) : 0
   );
+  const [invitationsGeneratedPercentage, setInvitationsGeneratedPercentage] = useState<number>(
+    event.participants > 0 ? Math.min((event.invitations_generated / event.participants) * 100, 100) : 0
+  );
 
   useEffect(() => {
     setAttendancePercentage(
@@ -27,6 +30,9 @@ const AdminEventPage: React.FC<AdminEventPageProps> = ({ event }) => {
     );
     setEmailsSentPercentage(
       event.participants > 0 ? Math.min((event.emails_sent / event.participants) * 100, 100) : 0
+    );
+    setInvitationsGeneratedPercentage(
+      event.participants > 0 ? Math.min((event.invitations_generated / event.participants) * 100, 100) : 0
     );
   }, [event]);
 
@@ -115,6 +121,28 @@ const AdminEventPage: React.FC<AdminEventPageProps> = ({ event }) => {
               <span className="text-sm text-muted-foreground">
                 {eventData.emails_sent} / {eventData.participants}
                 {eventData.participants > 0 && ` (${Math.round(emailsSentPercentage)}%)`}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Emails Sent Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Progress value={invitationsGeneratedPercentage} className="h-3" />
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-blue-500" />
+                <span className="text-sm font-medium">Sent</span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {eventData.invitations_generated} / {eventData.participants}
+                {eventData.participants > 0 && ` (${Math.round(invitationsGeneratedPercentage)}%)`}
               </span>
             </div>
           </CardContent>

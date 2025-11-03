@@ -63,7 +63,7 @@ const EventVerifyPage = ({ params }: { params: Promise<{ event: string }> }) => 
   return (
     <>
       <AppBar />
-      <h1 className="text-center text-2xl font-semibold mt-4">{event && event.title}</h1>
+      <h1 className="text-center text-2xl font-semibold mt-2">{event && event.title}</h1>
       {isScannerActive == null ? (
         <QRSkeleton />
       ) : (

@@ -64,7 +64,7 @@ const AppBar = () => {
               height={48}
               className="h-10 w-auto sm:h-12"
             />
-            <span className="hidden text-xl font-bold sm:inline-block">
+            <span className="sm:text-xl font-bold">
               GBPUAT Events
             </span>
           </Link>
