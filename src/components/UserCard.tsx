@@ -106,10 +106,10 @@ const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-2 text-center pt-3">
+      <CardHeader className="pb-2 text-center">
         {/* 3:4 Portrait Photo - 144×192 */}
         <div className="flex justify-center mb-1">
-          <div className="w-36 h-48 bg-muted/20 overflow-hidden rounded-sm">
+          <div className="w-36 h-48 bg-muted/20 border-2 border-dashed border-muted-foreground/30 overflow-hidden rounded-sm">
             <Avatar className="h-full w-full rounded-none">
               <AvatarImage
                 src={
@@ -133,63 +133,63 @@ const UserCard: React.FC<UserCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 pt-1">
+      <CardContent className="space-y-3">
         {/* Personal Info */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-base">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
           {user.college_id && (
             <>
               <span className="text-muted-foreground">College ID</span>
-              <span className="font-medium truncate">{user.college_id}</span>
+              <span className="font-medium wrap-break-words">{user.college_id}</span>
             </>
           )}
           {user.aadhar && (
             <>
               <span className="text-muted-foreground">Aadhar</span>
-              <span className="font-mono tabular-nums">{user.aadhar}</span>
+              <span className="font-mono tabular-nums wrap-break-words">{user.aadhar}</span>
             </>
           )}
           {user.hostel && (
             <>
               <span className="text-muted-foreground">Hostel</span>
-              <span className="font-medium truncate">{user.hostel.name}</span>
+              <span className="font-medium wrap-break-words">{user.hostel.name}</span>
             </>
           )}
           {user.college && (
             <>
               <span className="text-muted-foreground">College</span>
-              <span className="font-medium truncate">{user.college.name}</span>
+              <span className="font-medium wrap-break-words">{user.college.name}</span>
             </>
           )}
           {user.department && (
             <>
               <span className="text-muted-foreground">Department</span>
-              <span className="font-medium truncate">{user.department.name}</span>
+              <span className="font-medium wrap-break-words">{user.department.name}</span>
             </>
           )}
           {user.designation && (
             <>
               <span className="text-muted-foreground">Designation</span>
-              <span className="font-medium truncate">{user.designation}</span>
+              <span className="font-medium wrap-break-words">{user.designation}</span>
             </>
           )}
         </div>
 
         {event && (
           <>
-            <Separator className="my-2" />
+            <Separator className="my-1.5" />
 
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm text-center">
               <span className="text-muted-foreground">Main Gate</span>
-              <span className="font-medium">{event.verifier.name}</span>
+              <span className="font-medium wrap-break-words">{event.verifier.name}</span>
 
               <span className="text-muted-foreground">Entry Gate</span>
-              <span className="font-medium">{event.entry_gate}</span>
+              <span className="font-medium wrap-break-words">{event.entry_gate}</span>
 
               <span className="text-muted-foreground">Enclosure No.</span>
-              <span className="font-medium">{event.enclosure_no}</span>
+              <span className="font-medium wrap-break-words">{event.enclosure_no}</span>
 
               <span className="text-muted-foreground">Status</span>
-              <div className="flex items-center gap-1">{getStatusBadge()}</div>
+              <div className="flex items-center justify-center gap-1">{getStatusBadge()}</div>
             </div>
 
             {event.entry_time && (
