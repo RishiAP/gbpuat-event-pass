@@ -11,6 +11,8 @@ export interface IEvent extends Document{
     emails_sent: number;
     verifiers: {verifier:Schema.Types.ObjectId,no_of_users:number}[];
     invitations_generated: number;
+    id_card_generated: number;
+    faculties: number;
 }
 
 const EventSchema=new Schema<IEvent>({
@@ -62,6 +64,16 @@ const EventSchema=new Schema<IEvent>({
         default:0
     },
     invitations_generated:{
+        type: Number,
+        required: true,
+        default:0
+    },
+    id_card_generated:{
+        type: Number,
+        required: true,
+        default:0
+    },
+    faculties:{
         type: Number,
         required: true,
         default:0

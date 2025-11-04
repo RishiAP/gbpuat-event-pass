@@ -180,13 +180,20 @@ export async function POST(req: NextRequest) {
             );
         }
         const participants=await User.find({[`events.${event_id}`]:{$exists:true}}).countDocuments();
+        const faculties=await User.find({
+            $or: [
+                { college_id: { $exists: false } },
+                { college_id: null }
+            ],
+            [`events.${event_id}`]:{$exists:true}
+        }).countDocuments();
         const no_of_verifiers:number=Array.from(verifierMap.keys()).length;
         for(let i=0;i<no_of_verifiers;i++){
             const no_of_users=await User.countDocuments({[`events.${event_id}.verifier`]:verifiers[i]._id});
             if(no_of_users>0)
                 eventVerifiers.set(verifiers[i]._id,no_of_users);
         }
-        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants,
+        const updatedEvent=await Event.findByIdAndUpdate(event_id, { participants, faculties,
             verifiers: Array.from(eventVerifiers.entries()).map(([key,value])=>({verifier:key,no_of_users:value}))
         }, { new:true });
 

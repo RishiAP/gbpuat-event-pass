@@ -16,6 +16,7 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
+  IdCard,
 } from "lucide-react";
 import Event from "@/types/Event";
 import { useEffect, useState } from "react";
@@ -44,6 +45,8 @@ export function EventCard({ event, onEdit }: EventCardProps) {
   const [emailSendLoading, setEmailSendLoading] = useState<boolean>(false);
   const [invitationGenerateLoading, setInvitationGenerateLoading] =
     useState<boolean>(false);
+  const [idCardsGeneratedPercentage, setIdCardsGeneratedPercentage] = useState<number>(0);
+  const [idCardGenerateLoading, setIdCardGenerateLoading] = useState<boolean>(false);
 
   const dispatch = useDispatch();
 
@@ -248,6 +251,101 @@ export function EventCard({ event, onEdit }: EventCardProps) {
     }
   };
 
+  const handleIdCardGeneration = async (eventId: string) => {
+    setIdCardGenerateLoading(true);
+
+    const toastId = toast.loading("Generating ID cards...", {
+      description: "Processing faculty data...",
+    });
+
+    try {
+      const response = await fetch("/api/generate-faculty-ids", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: eventId }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to start ID card generation stream");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            switch (data.status) {
+              case "started":
+                toast.loading(`Processing ${data.total} faculties...`, {
+                  id: toastId,
+                  description: `Event: ${data.eventTitle}`,
+                });
+                break;
+
+              case "batch_complete":
+                // Note: You'll need to add an increaseIdCardsGenerated action to your Redux store
+                // similar to increaseInvitationsGenerated
+                toast.loading(
+                  `Batch ${data.batch}/${data.totalBatches} complete`,
+                  {
+                    id: toastId,
+                    description: `${data.totalProcessed}/${data.total} processed (${data.percentage}%)`,
+                  }
+                );
+                break;
+
+              case "complete":
+                toast.dismiss(toastId);
+                if (data.failed > 0) {
+                  toast.warning(
+                    `${data.failed} ID cards failed to generate`,
+                    {
+                      description: `${data.successful} successful. Check logs for details.`,
+                      icon: <AlertCircle className="h-4 w-4" />,
+                    }
+                  );
+                } else {
+                  toast.success(`All ${data.successful} ID cards generated!`, {
+                    icon: <CheckCircle className="h-4 w-4" />,
+                  });
+                }
+                break;
+
+              case "error":
+                toast.dismiss(toastId);
+                toast.error("ID card generation failed", {
+                  description: data.message || "Unknown error",
+                  icon: <XCircle className="h-4 w-4" />,
+                });
+                break;
+            }
+          } catch (e) {
+            console.error("SSE parse error:", e);
+          }
+        }
+      }
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error("Failed to generate ID cards", {
+        description: "Please try again later.",
+        icon: <XCircle className="h-4 w-4" />,
+      });
+    } finally {
+      setIdCardGenerateLoading(false);
+    }
+  };
+
   // Update percentages
   useEffect(() => {
     const participants = event.participants;
@@ -260,11 +358,16 @@ export function EventCard({ event, onEdit }: EventCardProps) {
     setInvitationPercentage(
       participants > 0 ? (event.invitations_generated / participants) * 100 : 0
     );
+    setIdCardsGeneratedPercentage(
+      participants > 0 ? (event.id_card_generated / event.faculties) * 100 : 0
+    );
   }, [
     event.attended,
     event.participants,
     event.emails_sent,
     event.invitations_generated,
+    event.id_card_generated,
+    event.faculties,
   ]);
 
   // Auto-toast on failure threshold
@@ -359,6 +462,20 @@ export function EventCard({ event, onEdit }: EventCardProps) {
                 <span>{invitationPercentage.toFixed(0)}%</span>
               </div>
             </div>
+            {/* ID Cards Generated */}
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                <FileText className="w-4 h-4" />
+                ID Cards Generated
+              </div>
+              <Progress value={idCardsGeneratedPercentage} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>
+                  {event.id_card_generated} / {event.faculties}
+                </span>
+                <span>{idCardsGeneratedPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
 
             {/* Emails */}
             <div>
@@ -437,8 +554,29 @@ export function EventCard({ event, onEdit }: EventCardProps) {
             <>
               <FileText className="mr-2 h-4 w-4" />
               {event.invitations_generated >= event.participants
-                ? "Generated"
+                ? "Invitations Generated"
                 : "Generate Invitations"}
+            </>
+          )}
+        </Button>
+        {/* Generate ID Cards */}
+        <Button
+          className="w-full"
+          variant="default"
+          onClick={async () => await handleIdCardGeneration(event._id)}
+          disabled={idCardGenerateLoading || event.id_card_generated >= event.faculties}
+        >
+          {idCardGenerateLoading ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <IdCard className="mr-2 h-4 w-4" />
+              {event.id_card_generated >= event.faculties
+                ? "ID Cards Generated"
+                : "Generate ID Cards"}
             </>
           )}
         </Button>
