@@ -6,6 +6,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -56,15 +57,16 @@ const eventSchema = z.object({
       (date) => date >= new Date(new Date().setHours(0, 0, 0, 0)),
       { message: "Event date must be in the future" }
     ),
+  status: z.enum(["active", "inactive"]).optional(),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
 
 interface EventModalProps {
-  event?: Event;
+  event?: Event & { status?: "active" | "inactive" };
   isOpen: boolean;
   onClose: () => void;
-  onEventUpdated: (event: Event) => void;
+  onEventUpdated: (event: Event & { status?: "active" | "inactive" }) => void;
 }
 
 const getInitialForm = (): EventFormData => ({
@@ -72,6 +74,7 @@ const getInitialForm = (): EventFormData => ({
   description: "",
   date: new Date(),
   location: "",
+  status: "active",
 });
 
 export function EventModal({
@@ -96,6 +99,7 @@ export function EventModal({
         description: event.description,
         location: event.location,
         date: new Date(event.date),
+        status: event.status || "active",
       });
     } else {
       form.reset(getInitialForm());
@@ -307,6 +311,46 @@ export function EventModal({
                 </FormItem>
               )}
             />
+
+            {/* Status Toggle - Only show when editing and event date is today or in the past */}
+            {event && new Date(event.date) <= new Date(new Date().setHours(23, 59, 59, 999)) && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Status</FormLabel>
+                        <div className={cn(
+                          "text-sm font-medium",
+                          field.value === "active" 
+                            ? "text-green-600 dark:text-green-500" 
+                            : "text-red-600 dark:text-red-500"
+                        )}>
+                          {field.value === "active" ? "Active" : "Inactive"}
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value === "active"}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked ? "active" : "inactive")
+                          }
+                          disabled={form.formState.isSubmitting}
+                          className={cn(
+                            field.value === "active" 
+                              ? "data-[state=checked]:bg-green-600" 
+                              : ""
+                          )}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* RESPONSIVE FOOTER */}
             <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3">

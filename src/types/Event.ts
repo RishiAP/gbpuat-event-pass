@@ -5,7 +5,7 @@ export default interface Event {
     description: string;
     date: Date;
     location: string;
-    status: string;
+    status: "active" | "inactive";
     attended: number;
     participants: number;
     _id:string;

@@ -412,7 +412,8 @@ export function EventCard({ event, onEdit }: EventCardProps) {
             </Link>
           </CardTitle>
           <Badge
-            variant={event.status === "Active" ? "default" : "destructive"}
+            variant={event.status === "active" ? "default" : "destructive"}
+            className={`${event.status === "active" ? "bg-green-500" : "bg-red-500"}`}
           >
             {event.status}
           </Badge>

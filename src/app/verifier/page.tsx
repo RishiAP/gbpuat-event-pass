@@ -42,7 +42,7 @@ const VerifierPage = async () => {
                       <span>{event.title}</span>
                     </CardTitle>
                     <Badge
-                      variant={event.status === 'Active' ? 'default' : 'destructive'}
+                      variant={event.status === 'active' ? 'default' : 'destructive'}
                       className="flex-shrink-0"
                     >
                       {event.status}

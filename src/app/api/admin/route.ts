@@ -65,7 +65,7 @@ export async function PUT(req:NextRequest){
         const data=await req.json();
         const {type}=data;
         if(type=="event"){
-            const {title,description,date,location,_id}=data;
+            const {title,description,date,location,_id,status}=data;
             const event=await Event.findById(_id);
             if(event==null){
                 return NextResponse.json({error:"Event not found"},{status:404});
@@ -74,6 +74,7 @@ export async function PUT(req:NextRequest){
             event.description=description;
             event.date=date;
             event.location=location;
+            event.status=status;
             await event.save();
             return NextResponse.json(event,{status:200});
         }
