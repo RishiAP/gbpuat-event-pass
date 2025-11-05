@@ -6,7 +6,7 @@ import { Verifier } from "@/models/Verifier";
 connect();
 
 export default async function AdminPageWrapper() {
-  const events = JSON.parse(JSON.stringify(await Event.find()));
+  const events = JSON.parse(JSON.stringify(await Event.find().sort({ date: -1 })));
   const verifiers = JSON.parse(JSON.stringify(await Verifier.find()));
 
   return <AdminPage events={events} verifiers={verifiers} />;
