@@ -27,7 +27,7 @@ const CONFIG = {
   CONCURRENT_PAGES: 5,
   PDF_TIMEOUT: 15000,
   CONTENT_TIMEOUT: 30000,
-  RENDER_DELAY: 1000
+  RENDER_DELAY: 500
 };
 
 const bufferToStream = (buffer: Buffer): Readable => new Readable({

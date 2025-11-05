@@ -20,13 +20,13 @@ connect();
 const CONFIG = {
   BATCH_SIZE: 50,               // Total users per batch
   CONCURRENT_EMAILS: 5,         // Parallel email sends (5 at a time)
-  CHUNK_DELAY: 5000,            // 5 second delay between chunks of 5 emails
+  CHUNK_DELAY: 3000,            // 3 second delay between chunks of 5 emails
   BATCH_DELAY: 2000,            // 2 second delay between batches
   RETRY_ATTEMPTS: 2,            // Retry failed emails
   RETRY_DELAY: 1000             // Delay before retry
 };
-// With this config: 5 emails take ~2.5s + 5s delay = 7.5s per chunk
-// That's 5 emails per 7.5s = ~40 emails/minute ✅
+// With this config: 5 emails take ~2.5s + 3s delay = 5.5s per chunk
+// That's 5 emails per 5.5s = ~54 emails/minute ✅
 
 export default interface UserType {
   email: string;
