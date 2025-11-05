@@ -27,6 +27,7 @@ import {
 } from "@/store/fileUploadModalSlice";
 import {
   increaseEmailsSent,
+  increaseIdCardsGenerated,
   increaseInvitationsGenerated,
 } from "@/store/eventsSlice";
 import { toast } from "sonner";
@@ -296,6 +297,12 @@ export function EventCard({ event, onEdit }: EventCardProps) {
               case "batch_complete":
                 // Note: You'll need to add an increaseIdCardsGenerated action to your Redux store
                 // similar to increaseInvitationsGenerated
+                dispatch(
+                  increaseIdCardsGenerated({
+                    _id: eventId,
+                    increase: data.batchSuccessful,
+                  })
+                );
                 toast.loading(
                   `Batch ${data.batch}/${data.totalBatches} complete`,
                   {

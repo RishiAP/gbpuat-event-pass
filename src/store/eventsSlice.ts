@@ -28,10 +28,16 @@ export const eventsSlice = createSlice({
             state.value[index].invitations_generated+=action.payload.increase;
         }
     },
+    increaseIdCardsGenerated:(state,action:PayloadAction<{_id:string,increase:number}>)=>{
+        const index = state.value.findIndex(event=>event._id===action.payload._id);
+        if(index!==-1){
+            state.value[index].id_card_generated+=action.payload.increase;
+        }
+    }
   },
 })
 
 // Action creators are generated for each case reducer function
-export const { setEvents,increaseEmailsSent,increaseInvitationsGenerated } = eventsSlice.actions
+export const { setEvents,increaseEmailsSent,increaseInvitationsGenerated,increaseIdCardsGenerated } = eventsSlice.actions
 
 export default eventsSlice.reducer
