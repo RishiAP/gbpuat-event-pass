@@ -14,7 +14,7 @@ import FrontEndDate from '@/components/FrontEndDate';
 connect();
 
 const VerifierPage = async () => {
-  const events: UNIEvents[] = await Event.find({ status: 'active' });
+  const events: UNIEvents[] = await Event.find({ status: 'active' }).sort({ date: -1 });
 
   return (
     <>
