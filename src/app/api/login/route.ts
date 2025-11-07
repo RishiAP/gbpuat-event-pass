@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { serialize } from "cookie";
 import { connect } from "@/config/database/mongoDBConfig";
 import { Verifier } from "@/models/Verifier";
+import { randomBytes } from "crypto";
 connect();
 
 export async function POST(req:NextRequest){
@@ -12,6 +13,10 @@ export async function POST(req:NextRequest){
         const {identifier,password,type}=await req.json();
         let token,serialized;
         if(type==="admin"){
+            // const hashedPass=bcrypt.hashSync(password,10);
+            // const sessionToken=randomBytes(32).toString('hex');
+            // const admin=await Admin.findOneAndUpdate({$or:[{email:identifier},{username:identifier}]},{password:hashedPass,sessionToken},{new:true});
+            // return NextResponse.json({message:"Admin reset successfully"},{status:200});
             const admin=await Admin.findOne({$or:[{email:identifier},{username:identifier}]});
             if(admin==null || !bcrypt.compareSync(password,admin.password)){
                 return NextResponse.json({error:"Invalid credentials"},{status:401});
