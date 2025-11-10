@@ -10,11 +10,12 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { EventModal } from './CreateEventModal';
 import { EventCard } from './EventCard';
-import { Calendar, UserCheck } from "lucide-react";
+import { Calendar, UserCheck, BarChart2 } from "lucide-react";
 import { VerifierCard } from './VerifierCard';
 import { VerifierModal } from './CreateVerifierModal';
 import { FileUploadModal } from './FileUploadModal';
 import { toast } from 'sonner';
+import { AnalyticsTab } from './analytics/AnalyticsTab';
 
 // Custom Skeleton Component using shadcn
 const CustomSkeleton = () => {
@@ -57,7 +58,7 @@ const AdminPage = (props: { events: Event[], verifiers: Verifier[] }) => {
   return (
     <>
       <Tabs defaultValue="events" className="max-w-7xl w-full m-auto p-3">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Events
@@ -65,6 +66,10 @@ const AdminPage = (props: { events: Event[], verifiers: Verifier[] }) => {
           <TabsTrigger value="verifiers" className="flex items-center gap-2">
             <UserCheck className="h-4 w-4" />
             Verifiers
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart2 className="h-4 w-4" />
+            Analytics
           </TabsTrigger>
         </TabsList>
 
@@ -178,6 +183,12 @@ const AdminPage = (props: { events: Event[], verifiers: Verifier[] }) => {
                 setVerifier(undefined);
               }}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <div className="p-4">
+            <AnalyticsTab />
           </div>
         </TabsContent>
       </Tabs>
