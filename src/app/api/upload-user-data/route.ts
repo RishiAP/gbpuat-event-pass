@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
                     if (verifierMap.has(verf)) {
                         rowData[headerToObject[header]] = verifierMap.get(verf);
                     } else {
-                        return null;
+                        throw new Error(`Invalid verifier '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
                 }else if (headerToObject[header]=="hostel" && rowData[headerToObject[header]]!=null){
                     const hostel=row[i].toLowerCase().trim().replaceAll("&","and");

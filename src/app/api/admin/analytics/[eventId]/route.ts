@@ -5,11 +5,11 @@ import mongoose from 'mongoose';
 
 export async function GET(
   request: Request,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     await connect();
-    const { eventId } = params;
+    const { eventId } = await params;
     const eventObjectId = new mongoose.Types.ObjectId(eventId);
 
     // Get all users registered for the event
@@ -59,7 +59,7 @@ export async function GET(
       {
         $group: {
           _id: {
-            $ifNull: ['$hostelInfo.name', 'Not Specified']
+            $ifNull: ['$hostelInfo.name', 'Faculty']
           },
           registrations: { $sum: 1 },
           attended: {
