@@ -43,13 +43,14 @@ const AppBar = () => {
     }
   };
 
-  const navItems = [
-    { label: "Home", href: "#", icon: Home },
-    { label: "About", href: "#", icon: Info },
-    { label: "Services", href: "#", icon: Briefcase },
-    { label: "Pricing", href: "#", icon: DollarSign },
-    { label: "Contact", href: "#", icon: Mail },
-  ];
+  // const navItems = [
+  //   { label: "Home", href: "#", icon: Home },
+  //   { label: "About", href: "#", icon: Info },
+  //   { label: "Services", href: "#", icon: Briefcase },
+  //   { label: "Pricing", href: "#", icon: DollarSign },
+  //   { label: "Contact", href: "#", icon: Mail },
+  // ];
+  const navItems:any[] = [];
 
   return (
     <>
