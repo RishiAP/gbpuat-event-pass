@@ -51,12 +51,7 @@ const eventSchema = z.object({
     .string()
     .min(1, "Location is required")
     .max(200, "Location must be less than 200 characters"),
-  date: z
-    .date()
-    .refine(
-      (date) => date >= new Date(new Date().setHours(0, 0, 0, 0)),
-      { message: "Event date must be in the future" }
-    ),
+  date: z.date(),
   status: z.enum(["active", "inactive"]).optional(),
 });
 
@@ -85,6 +80,7 @@ export function EventModal({
 }: EventModalProps) {
   const dispatch = useDispatch();
   const events = useSelector((state: any) => state.events.value);
+  const isPastEvent = !!event && new Date(event.date) < new Date(new Date().setHours(0, 0, 0, 0));
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
@@ -107,16 +103,30 @@ export function EventModal({
   }, [event, isOpen, form]);
 
   const onSubmit = async (data: EventFormData): Promise<void> => {
+    if (!event) {
+      const today = new Date(new Date().setHours(0, 0, 0, 0));
+      if (data.date < today) {
+        form.setError("date", { message: "Event date must be in the future" });
+        return;
+      }
+    }
     const toastId = toast.loading(event ? "Updating event..." : "Adding event...");
 
     try {
       if (event) {
-        await axios.put("/api/admin", {
+        const updatePayload = {
           ...data,
+          title: event.title,
+          description: event.description,
+          location: event.location,
+          date: isPastEvent ? new Date(event.date) : data.date,
+        };
+        await axios.put("/api/admin", {
+          ...updatePayload,
           type: "event",
           _id: event._id,
         });
-        onEventUpdated({ ...event, ...data });
+        onEventUpdated({ ...event, ...updatePayload });
         toast.dismiss(toastId);
         toast.success("Event updated successfully");
       } else {
@@ -193,7 +203,7 @@ export function EventModal({
                   <FormControl>
                     <Input
                       placeholder="Enter event title"
-                      disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || !!event}
                       {...field}
                     />
                   </FormControl>
@@ -212,7 +222,7 @@ export function EventModal({
                   <FormControl>
                     <Input
                       placeholder="Enter event description"
-                      disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || !!event}
                       {...field}
                     />
                   </FormControl>
@@ -231,7 +241,7 @@ export function EventModal({
                   <FormControl>
                     <Input
                       placeholder="Enter event location"
-                      disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || !!event}
                       {...field}
                     />
                   </FormControl>
@@ -258,7 +268,7 @@ export function EventModal({
                               "w-full sm:w-auto justify-start text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
-                            disabled={form.formState.isSubmitting}
+                            disabled={form.formState.isSubmitting || isPastEvent}
                             type="button"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -279,7 +289,7 @@ export function EventModal({
                               }
                             }}
                             disabled={(d) =>
-                              d < new Date(new Date().setHours(0, 0, 0, 0))
+                              (!event && d < new Date(new Date().setHours(0, 0, 0, 0))) || isPastEvent
                             }
                             initialFocus
                           />
@@ -297,7 +307,7 @@ export function EventModal({
                             "0"
                           )}:${String(field.value.getMinutes()).padStart(2, "0")}`}
                           onChange={handleTimeChange}
-                          disabled={form.formState.isSubmitting}
+                          disabled={form.formState.isSubmitting || isPastEvent}
                         />
                       </div>
 
@@ -312,8 +322,8 @@ export function EventModal({
               )}
             />
 
-            {/* Status Toggle - Only show when editing and event date is today or in the past */}
-            {event && new Date(event.date) <= new Date(new Date().setHours(23, 59, 59, 999)) && (
+            {/* Status Toggle - Show when editing */}
+            {event && (
               <FormField
                 control={form.control}
                 name="status"

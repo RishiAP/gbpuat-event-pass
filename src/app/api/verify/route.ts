@@ -52,6 +52,11 @@ export async function POST(req:NextRequest){
         const {qrData,event}=await req.json();
         if(qrData==null || event==null)
             return NextResponse.json({message:"Invalid Request"},{status:400});
+        const currentEvent = await Event.findById(event);
+        if(currentEvent==null)
+            return NextResponse.json({message:"Event not found"},{status:404});
+        if(currentEvent.status!=="active")
+            return NextResponse.json({message:"Event is inactive"},{status:403});
         let user:any;
         try{
             user=jwt.verify(qrData,String(process.env.JWT_USER_QR_SECRET));
@@ -90,6 +95,8 @@ export async function PUT(req:NextRequest){
         const event=await Event.findById(event_id);
         if(event==null)
             return NextResponse.json({message:"Event not found"},{status:404});
+        if(event.status!=="active")
+            return NextResponse.json({message:"Event is inactive"},{status:403});
         const verifier=await Verifier.findById(user.events.get(event_id).verifier);
         if(verifier==null)
             return NextResponse.json({message:"Verifier not found"},{status:404});

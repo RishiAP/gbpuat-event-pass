@@ -69,7 +69,13 @@ const EventVerifyPage = ({ params }: { params: Promise<{ event: string }> }) => 
     <>
       <AppBar />
       <h1 className="text-center text-2xl font-semibold mt-2">{event && event.title}</h1>
-      {isScannerActive == null ? (
+      {event?.status === "inactive" ? (
+        <div className="w-full max-w-2xl m-auto px-4">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+            This event is inactive. Verification is disabled.
+          </div>
+        </div>
+      ) : isScannerActive == null ? (
         <QRSkeleton />
       ) : (
         <div className="w-full max-w-2xl m-auto px-4">

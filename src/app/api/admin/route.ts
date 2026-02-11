@@ -37,7 +37,12 @@ export async function POST(req:NextRequest){
         const {type}=data;
         if(type=="event"){
             const {title,description,date,location}=data;
-            const event=new Event({title,description,date,location,status:"active"});
+            const today=new Date(new Date().setHours(0,0,0,0));
+            const incomingDate=new Date(date);
+            if(incomingDate<today){
+                return NextResponse.json({error:"Event date must be in the future"},{status:400});
+            }
+            const event=new Event({title,description,date,location,status:"inactive"});
             await event.save();
             return NextResponse.json(event,{status:200});
         }
@@ -70,11 +75,30 @@ export async function PUT(req:NextRequest){
             if(event==null){
                 return NextResponse.json({error:"Event not found"},{status:404});
             }
-            event.title=title;
-            event.description=description;
-            event.date=date;
-            event.location=location;
-            event.status=status;
+            const today=new Date(new Date().setHours(0,0,0,0));
+            const existingDate=new Date(event.date);
+            const incomingDate=new Date(date);
+            if(existingDate<today){
+                if(
+                    title!==event.title ||
+                    description!==event.description ||
+                    location!==event.location ||
+                    incomingDate.getTime()!==existingDate.getTime()
+                ){
+                    return NextResponse.json({error:"Only status can be updated for past events"},{status:400});
+                }
+                event.status=status;
+            }
+            else{
+                if(incomingDate<today){
+                    return NextResponse.json({error:"Event date must be in the future"},{status:400});
+                }
+                event.title=title;
+                event.description=description;
+                event.location=location;
+                event.date=incomingDate;
+                event.status=status;
+            }
             await event.save();
             return NextResponse.json(event,{status:200});
         }
