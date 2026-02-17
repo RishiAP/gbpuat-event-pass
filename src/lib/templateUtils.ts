@@ -1,4 +1,4 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import mjml2html from "mjml";
 
 // ─── Variable Detection ────────────────────────────────────────────────
@@ -96,8 +96,8 @@ export function sanitizeHTML(html: string): string {
     return `${placeholder}${tokens.length - 1}___`;
   });
 
-  const clean = DOMPurify.sanitize(protected_, {
-    ALLOWED_TAGS: [
+  const clean = sanitizeHtml(protected_, {
+    allowedTags: [
       // Structure
       "html", "head", "body", "div", "span", "p", "br", "hr",
       // Headings
@@ -107,7 +107,7 @@ export function sanitizeHTML(html: string): string {
       // Table
       "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
       // Inline
-      "a", "img", "strong", "em", "b", "i", "u", "s", "sub", "sup", "small", "big",
+      "a", "img", "strong", "em", "b", "i", "u", "s", "sub", "sup", "small",
       // Media
       "figure", "figcaption",
       // Misc
@@ -115,18 +115,23 @@ export function sanitizeHTML(html: string): string {
       // Document / Style / External resources
       "style", "meta", "title", "link",
     ],
-    ALLOWED_ATTR: [
-      "style", "class", "id", "href", "src", "alt", "title", "width", "height",
-      "align", "valign", "bgcolor", "border", "cellpadding", "cellspacing",
-      "colspan", "rowspan", "target", "rel", "role",
-      "http-equiv", "content", "name", "charset", "type", "media",
-      "dir", "lang", "xmlns", "xmlns:v", "xmlns:o",
-      // CDN / external resource attributes
-      "integrity", "crossorigin", "referrerpolicy", "as", "sizes", "loading",
-    ],
-    ALLOW_DATA_ATTR: true,
-    WHOLE_DOCUMENT: true,
-    ALLOW_UNKNOWN_PROTOCOLS: false,
+    allowedAttributes: {
+      "*": [
+        "style", "class", "id", "title", "role",
+        "align", "valign", "bgcolor", "border",
+        "dir", "lang", "xmlns", "xmlns:v", "xmlns:o",
+        "data-*",
+      ],
+      a: ["href", "target", "rel"],
+      img: ["src", "alt", "width", "height", "loading"],
+      td: ["colspan", "rowspan", "width", "height", "cellpadding", "cellspacing"],
+      th: ["colspan", "rowspan", "width", "height"],
+      table: ["cellpadding", "cellspacing", "width", "height", "border"],
+      meta: ["http-equiv", "content", "name", "charset"],
+      link: ["href", "rel", "type", "media", "integrity", "crossorigin", "referrerpolicy", "as", "sizes"],
+    },
+    allowVulnerableTags: true,
+    allowedSchemes: ["http", "https", "mailto"],
   });
 
   // Restore template tokens
