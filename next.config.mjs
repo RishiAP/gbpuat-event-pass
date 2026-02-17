@@ -8,7 +8,14 @@ const nextConfig = {
               hostname: '**'
             },
         ],
-    },  
+    },
+    serverExternalPackages: [
+        'mjml',
+        'mjml-core',
+        'mjml-migrate',
+        'mjml-parser-xml',
+        'mjml-validator',
+    ],
 };
 
 export default nextConfig;

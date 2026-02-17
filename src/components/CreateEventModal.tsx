@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import {
   Popover,
   PopoverContent,
@@ -171,28 +171,27 @@ export function EventModal({
       .join("");
   };
 
-  const handleClose = (open: boolean) => {
-    if (!form.formState.isSubmitting && !open) {
+  const handleClose = (open?: boolean) => {
+    if (!form.formState.isSubmitting && (open === false || open === undefined)) {
       onClose();
       setTimeout(() => form.reset(getInitialForm()), 300);
     }
   };
 
   return (
-    <Dialog open={form.formState.isSubmitting || isOpen} onOpenChange={handleClose}>
-      {/* RESPONSIVE DIALOG */}
-      <DialogContent className="max-w-full sm:max-w-[525px] p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle>{event ? "Edit Event" : "Add a new event"}</DialogTitle>
-          <DialogDescription>
-            {event
-              ? "Update the event details below."
-              : "Create a new event by filling in the details below."}
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={form.formState.isSubmitting || isOpen} onClose={() => handleClose(false)} size="lg" closeOnOverlay={!form.formState.isSubmitting} closeOnEsc={!form.formState.isSubmitting}>
+      <ModalHeader>
+        <ModalTitle>{event ? "Edit Event" : "Add a new event"}</ModalTitle>
+        <ModalDescription>
+          {event
+            ? "Update the event details below."
+            : "Create a new event by filling in the details below."}
+        </ModalDescription>
+      </ModalHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <ModalBody className="space-y-4">
             {/* Title */}
             <FormField
               control={form.control}
@@ -362,8 +361,10 @@ export function EventModal({
               />
             )}
 
+            </ModalBody>
+
             {/* RESPONSIVE FOOTER */}
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <ModalFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -389,10 +390,9 @@ export function EventModal({
                   ? "Update Event"
                   : "Add Event"}
               </Button>
-            </DialogFooter>
+            </ModalFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }

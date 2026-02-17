@@ -42,3 +42,4 @@ next-env.d.ts
 certificates
 
 gbpuat-event-pass-google-drive-credentials.json
+gbpuat-events-credentials.json

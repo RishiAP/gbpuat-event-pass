@@ -4,7 +4,7 @@ import { Event } from "@/models/Event";
 import { User } from "@/models/User";
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import VerificationEmail from "@/templates/emails/VerificationEmail";
+import { getVerificationEmailHTML } from "@/helpers/templateService";
 import EventType from "@/types/Event";
 import { Verifier } from "@/models/Verifier";
 import Department from "@/types/Department";
@@ -86,15 +86,18 @@ const sendSingleEmail = async (
   time: string,
   date: string,
   verifier: string,
+  enclosure_no: string,
   retryCount: number = 0
 ): Promise<{ success: boolean; email: string; messageId?: string; error?: string }> => {
   try {
+    const emailHtml = await getVerificationEmailHTML(event_id, { jwtAccessToken, event, user, time, date, verifier, enclosure_no });
+
     const messageId = await sendEmail(
       `"Convocation GBPUAT" <${process.env.SMTP_NOREPLY}>`,
       user.email,
       event.title + " - Invitation",
       `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${jwtAccessToken}`,
-      VerificationEmail({ jwtAccessToken, event, user, time, date, verifier }),
+      emailHtml,
       user.events.get(event_id)?.invitation || "",
       `${event.title} - ${event.title} <${user.email}>.pdf`
     );
@@ -120,7 +123,7 @@ const sendSingleEmail = async (
     if (retryCount < CONFIG.RETRY_ATTEMPTS) {
       console.log(`  Retrying ${user.email} (attempt ${retryCount + 1}/${CONFIG.RETRY_ATTEMPTS})`);
       await sleep(CONFIG.RETRY_DELAY);
-      return sendSingleEmail(user, event, event_id, jwtAccessToken, time, date, verifier, retryCount + 1);
+      return sendSingleEmail(user, event, event_id, jwtAccessToken, time, date, verifier, enclosure_no, retryCount + 1);
     }
 
     return { 
@@ -162,8 +165,9 @@ const processBatch = async (
       );
 
       const verifier = verifiers[user.events.get(event_id)?.verifier.toString() || ""];
+      const enclosure_no = user.events.get(event_id)?.enclosure_no || "N/A";
       
-      return sendSingleEmail(user, event, event_id, jwtAccessToken, time, date, verifier);
+      return sendSingleEmail(user, event, event_id, jwtAccessToken, time, date, verifier, enclosure_no);
     });
 
     const results = await Promise.all(emailPromises);

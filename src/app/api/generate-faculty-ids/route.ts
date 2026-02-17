@@ -1,17 +1,15 @@
 import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
-import { drive_v3 } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from '@/models/User';
-import FacultyIdTemplate from '@/components/FacultyIdTemplate';
+import { getFacultyIdHTML } from '@/helpers/templateService';
 import { connect } from '@/config/database/mongoDBConfig';
 import { Event } from '@/models/Event';
-import { Readable } from 'stream';
 import { getUserFromHeader } from '@/helpers/common_func';
 import { College } from '@/models/College';
 import { Department } from '@/models/Department';
 import { Verifier } from '@/models/Verifier';
-import { initializeGoogleDrive } from '@/helpers/initGoogleDrive';
+import { uploadJpg } from '@/lib/cloudinary';
 
 connect();
 
@@ -36,165 +34,13 @@ const CONFIG = {
 // ──────────────────────────────────────────────────────────────
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-const bufferToStream = (buffer: Buffer): Readable => new Readable({
-  read() { 
-    this.push(buffer); 
-    this.push(null); 
-  }
-});
-
-// Mutex to prevent concurrent folder creation
-class FolderMutex {
-  private locks: Map<string, Promise<string>> = new Map();
-
-  async acquire(key: string, createFn: () => Promise<string>): Promise<string> {
-    if (this.locks.has(key)) {
-      return this.locks.get(key)!;
-    }
-
-    const promise = (async () => {
-      try {
-        return await createFn();
-      } finally {
-        this.locks.delete(key);
-      }
-    })();
-
-    this.locks.set(key, promise);
-    return promise;
-  }
-}
-
-const folderMutex = new FolderMutex();
-
-// Find or create folder with mutex and cache
-const findOrCreateFolder = async (
-  drive: drive_v3.Drive, 
-  parentFolderId: string, 
-  folderName: string,
-  folderCache: Map<string, string>
-): Promise<string> => {
-  const cacheKey = `${parentFolderId}:${folderName}`;
-  
-  if (folderCache.has(cacheKey)) {
-    return folderCache.get(cacheKey)!;
-  }
-
-  return folderMutex.acquire(cacheKey, async () => {
-    if (folderCache.has(cacheKey)) {
-      return folderCache.get(cacheKey)!;
-    }
-
-    try {
-      const escapedFolderName = folderName.replace(/'/g, "\\'");
-      
-      const response = await drive.files.list({
-        q: `mimeType='application/vnd.google-apps.folder' and name='${escapedFolderName}' and '${parentFolderId}' in parents and trashed=false`,
-        fields: 'files(id, name)',
-        spaces: 'drive',
-        pageSize: 1
-      });
-
-      if (response.data.files && response.data.files.length > 0) {
-        const folderId = response.data.files[0].id!;
-        console.log(`Folder found: ${folderName} (ID: ${folderId})`);
-        folderCache.set(cacheKey, folderId);
-        return folderId;
-      }
-
-      console.log(`Creating folder: ${folderName}`);
-      const folder = await drive.files.create({
-        requestBody: {
-          name: folderName,
-          mimeType: 'application/vnd.google-apps.folder',
-          parents: [parentFolderId],
-        },
-        fields: 'id',
-      });
-
-      const folderId = folder.data.id!;
-      console.log(`Folder created: ${folderName} (ID: ${folderId})`);
-      
-      folderCache.set(cacheKey, folderId);
-      return folderId;
-    } catch (error) {
-      console.error(`Error finding/creating folder: ${folderName}`, error);
-      throw error;
-    }
-  });
-};
-
-// Upload JPG - inherits folder permissions (no public access)
-const uploadJpg = async (
-  drive: drive_v3.Drive,
-  folderId: string,
-  filename: string,
-  buffer: Buffer
-): Promise<string> => {
-  try {
-    const fileList = await drive.files.list({
-      q: `name='${filename}' and '${folderId}' in parents and trashed=false`,
-      fields: 'files(id, name)',
-      pageSize: 1
-    });
-
-    if (fileList.data.files?.[0]?.id) {
-      await drive.files.delete({ fileId: fileList.data.files[0].id });
-      console.log(`Deleted old file: ${filename}`);
-    }
-
-    const media = {
-      mimeType: 'image/jpeg',
-      body: bufferToStream(buffer),
-    };
-
-    const file = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-      },
-      media,
-      fields: 'id, webViewLink',
-    });
-
-    const fileId = file.data.id!;
-    console.log(`Uploaded: ${filename} (restricted)`);
-    
-    // Return webViewLink - only accessible to users with folder permissions
-    return `https://drive.google.com/file/d/${fileId}/view`;
-  } catch (error) {
-    console.error(`Error uploading ${filename}:`, error);
-    throw error;
-  }
-};
-
-// Share folder with specific user
-const shareFolder = async (drive: drive_v3.Drive, folderId: string) => {
-  try {
-    await drive.permissions.create({
-      fileId: folderId,
-      requestBody: {
-        role: 'writer',
-        type: 'user',
-        emailAddress: process.env.GOOGLE_DRIVE_SHARE_TO_EMAIL!,
-      },
-    });
-    console.log(`Folder shared with ${process.env.GOOGLE_DRIVE_SHARE_TO_EMAIL}`);
-  } catch (error) {
-    console.error('Error sharing folder:', error);
-  }
-};
-
 // ──────────────────────────────────────────────────────────────
 // PROCESS SINGLE FACULTY
 // ──────────────────────────────────────────────────────────────
 const processFaculty = async (
   browser: any,
   user: any,
-  event: any,
-  drive: drive_v3.Drive,
-  facultyIdsFolderId: string,
-  folderCache: Map<string, string>
+  event: any
 ) => {
   const page = await browser.newPage();
   
@@ -205,7 +51,7 @@ const processFaculty = async (
       deviceScaleFactor: CONFIG.JPG_DPI_SCALE,
     });
 
-    const html = FacultyIdTemplate(event, user);
+    const html = await getFacultyIdHTML(event, user);
     
     await page.setContent(html, { 
       waitUntil: 'networkidle0', 
@@ -226,13 +72,10 @@ const processFaculty = async (
       timeout: CONFIG.SCREENSHOT_TIMEOUT,
     });
 
-    // Get or create college folder
+    // Upload to Cloudinary
     const collegeName = user.college?.name || 'No College';
-    const collegeFolderId = await findOrCreateFolder(drive, facultyIdsFolderId, collegeName, folderCache);
-
-    // Upload JPG
-    const filename = `${user.name} - ${user.email}.jpg`;
-    const url = await uploadJpg(drive, collegeFolderId, filename, jpgBuffer as Buffer);
+    const filename = `${user.name} - ${user.email}`;
+    const url = await uploadJpg(jpgBuffer as Buffer, event.title, collegeName, filename);
 
     // Update database
     await User.findByIdAndUpdate(user._id, {
@@ -260,9 +103,6 @@ const processFaculty = async (
 const processBatch = async (
   users: any[],
   event: any,
-  drive: drive_v3.Drive,
-  facultyIdsFolderId: string,
-  folderCache: Map<string, string>,
   concurrentPages: number
 ) => {
   const browser = await puppeteer.launch({
@@ -285,7 +125,7 @@ const processBatch = async (
       
       const results = await Promise.all(
         chunk.map(user => 
-          processFaculty(browser, user, event, drive, facultyIdsFolderId, folderCache)
+          processFaculty(browser, user, event)
         )
       );
 
@@ -344,22 +184,10 @@ export async function POST(request: NextRequest) {
       throw new Error('CONCURRENT_PAGES cannot be greater than BATCH_SIZE');
     }
 
-    const drive = initializeGoogleDrive();
-    
-    // Initialize folder cache
-    const folderCache = new Map<string, string>();
-
     const event = await Event.findById(event_id).select('title');
     if (!event) {
       return NextResponse.json({ message: "Event not found" }, { status: 404 });
     }
-
-    // Create folder structure
-    const baseFolderId = await findOrCreateFolder(drive, 'root', 'gbpuat-event-pass', folderCache);
-    await shareFolder(drive, baseFolderId);
-    
-    const eventFolderId = await findOrCreateFolder(drive, baseFolderId, event.title, folderCache);
-    const facultyIdsFolderId = await findOrCreateFolder(drive, eventFolderId, 'Faculty_IDS', folderCache);
 
     // Find faculties
     const faculties = await User.find({
@@ -419,17 +247,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found ${totalFaculties} faculties for event: ${event.title}`);
     console.log(`Config: BATCH=${CONFIG.BATCH_SIZE}, CONCURRENT=${CONFIG.CONCURRENT_PAGES}`);
-
-    // Pre-create college folders
-    const uniqueColleges = new Set(
-      faculties.map(f => f.college?.name || 'No College')
-    );
-    
-    console.log(`\nPre-creating ${uniqueColleges.size} college folders...`);
-    for (const collegeName of uniqueColleges) {
-      await findOrCreateFolder(drive, facultyIdsFolderId, collegeName, folderCache);
-      console.log(`✓ ${collegeName}`);
-    }
+    console.log(`Storage: Cloudinary`);
 
     // SSE Stream
     const encoder = new TextEncoder();
@@ -443,8 +261,7 @@ export async function POST(request: NextRequest) {
             config: {
               batchSize: CONFIG.BATCH_SIZE,
               concurrentPages: CONFIG.CONCURRENT_PAGES
-            },
-            colleges: uniqueColleges.size
+            }
           })}\n\n`));
 
           let totalProcessed = 0;
@@ -470,9 +287,6 @@ export async function POST(request: NextRequest) {
             const batchResults = await processBatch(
               batch,
               event,
-              drive,
-              facultyIdsFolderId,
-              folderCache,
               CONFIG.CONCURRENT_PAGES
             );
             

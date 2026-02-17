@@ -17,9 +17,15 @@ import {
   AlertCircle,
   XCircle,
   IdCard,
+  Plus,
+  Pencil,
+  Eye,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import Event from "@/types/Event";
-import { useEffect, useState } from "react";
+import Template from "@/types/Template";
+import { useEffect, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import {
   setFileUploadModalEventID,
@@ -32,6 +38,22 @@ import {
 } from "@/store/eventsSlice";
 import { toast } from "sonner";
 import Link from "next/link";
+import axios from "axios";
+import { TemplateEditorModal } from "./TemplateEditorModal";
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface EventCardProps {
   event: Event;
@@ -49,7 +71,61 @@ export function EventCard({ event, onEdit }: EventCardProps) {
   const [idCardsGeneratedPercentage, setIdCardsGeneratedPercentage] = useState<number>(0);
   const [idCardGenerateLoading, setIdCardGenerateLoading] = useState<boolean>(false);
 
+  // Template state
+  const [emailTemplate, setEmailTemplate] = useState<Template | null>(null);
+  const [pdfTemplate, setPdfTemplate] = useState<Template | null>(null);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorType, setEditorType] = useState<"email_html" | "pdf_html">("email_html");
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const dispatch = useDispatch();
+
+  // Fetch templates for this event
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setTemplatesLoading(true);
+      const res = await axios.get(`/api/templates?eventId=${event._id}`);
+      const templates: Template[] = res.data;
+      setEmailTemplate(templates.find((t) => t.type === "email_html") || null);
+      setPdfTemplate(templates.find((t) => t.type === "pdf_html") || null);
+    } catch {
+      // silent — templates just won't be available
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, [event._id]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
+  const hasEmailTemplate = !!emailTemplate;
+  const hasPdfTemplate = !!pdfTemplate;
+
+  const handleTemplateSaved = (saved: Template) => {
+    if (saved.type === "email_html") setEmailTemplate(saved);
+    else setPdfTemplate(saved);
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await axios.delete(`/api/templates?_id=${deleteTarget._id}`);
+      if (deleteTarget.type === "email_html") setEmailTemplate(null);
+      else setPdfTemplate(null);
+      toast.success("Template deleted");
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete template");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const date = new Date(event.date);
   const formattedDate = date.toLocaleDateString("en-US", {
@@ -400,7 +476,7 @@ export function EventCard({ event, onEdit }: EventCardProps) {
 
   return (
     <Card className="w-full max-w-lg transition-shadow hover:shadow-xl">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
@@ -421,7 +497,7 @@ export function EventCard({ event, onEdit }: EventCardProps) {
         <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Event Details */}
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -440,98 +516,320 @@ export function EventCard({ event, onEdit }: EventCardProps) {
 
         {/* Progress Stats */}
         {event.participants > 0 && (
-          <div className="space-y-4 pt-2 border-t">
-            {/* Attendance */}
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium mb-1">
-                <Users className="w-4 h-4" />
-                Attendance
-              </div>
-              <Progress value={attendancePercentage} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>
-                  {event.attended} / {event.participants}
-                </span>
-                <span>{attendancePercentage.toFixed(0)}%</span>
-              </div>
+          <div className="pt-2 border-t">
+            <div className="flex items-center gap-2 text-xs font-medium mb-1">
+              <Users className="w-4 h-4" />
+              Attendance
             </div>
-
-            {/* Invitations */}
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium mb-1">
-                <FileText className="w-4 h-4" />
-                Invitations Generated
-              </div>
-              <Progress value={invitationPercentage} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>
-                  {event.invitations_generated} / {event.participants}
-                </span>
-                <span>{invitationPercentage.toFixed(0)}%</span>
-              </div>
+            <Progress value={attendancePercentage} className="h-1.5" />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>{event.attended} / {event.participants}</span>
+              <span>{attendancePercentage.toFixed(0)}%</span>
             </div>
-            {/* ID Cards Generated */}
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium mb-1">
-                <FileText className="w-4 h-4" />
-                ID Cards Generated
-              </div>
-              <Progress value={idCardsGeneratedPercentage} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>
-                  {event.id_card_generated} / {event.faculties}
-                </span>
-                <span>{idCardsGeneratedPercentage.toFixed(0)}%</span>
-              </div>
-            </div>
-
-            {/* Emails */}
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium mb-1">
-                <Mail className="w-4 h-4" />
-                Emails Sent
-              </div>
-              <Progress value={emailPercentage} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>
-                  {event.emails_sent} / {event.participants}
-                </span>
-                <span>{emailPercentage.toFixed(0)}%</span>
-              </div>
-            </div>
-
-            {/* Send Email Button */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => handleSendingEmail(event._id)}
-              disabled={emailSendLoading || emailPercentage >= 100}
-            >
-              {emailSendLoading ? (
-                <>
-                  <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  {emailPercentage >= 100 ? "Sent" : "Send Emails"}
-                </>
-              )}
-            </Button>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2 border-t">
+        {/* ── EMAIL: Template + Send ── */}
+        <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold">Emails</span>
+            </div>
+            {templatesLoading ? (
+              <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+            ) : hasEmailTemplate ? (
+              <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4 bg-blue-600">
+                Template v{emailTemplate!.version}
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+                No Template
+              </Badge>
+            )}
+          </div>
+
+          {/* Email progress bar */}
+          {event.participants > 0 && (
+            <div>
+              <Progress value={emailPercentage} className="h-1.5" />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>{event.emails_sent} / {event.participants} sent</span>
+                <span>{emailPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Template + Send row */}
+          <div className="flex gap-1.5">
+            {templatesLoading ? (
+              <div className="h-8 flex-1 rounded bg-muted animate-pulse" />
+            ) : hasEmailTemplate ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs px-2"
+                  onClick={() => {
+                    setEditingTemplate(emailTemplate);
+                    setEditorType("email_html");
+                    setEditorOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setPreviewTemplate(emailTemplate)}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteTarget(emailTemplate)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setEditorType("email_html");
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Upload MJML Template
+              </Button>
+            )}
+
+            <div className="flex-1" />
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleSendingEmail(event._id)}
+                      disabled={emailSendLoading || emailPercentage >= 100 || !hasEmailTemplate}
+                    >
+                      {emailSendLoading ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Sending…
+                        </>
+                      ) : emailPercentage >= 100 ? (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Sent
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-3 w-3 mr-1" />
+                          Send Emails
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!hasEmailTemplate && (
+                  <TooltipContent>
+                    <p>Upload an email template first</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
+        {/* ── PDF INVITATIONS: Template + Generate ── */}
+        <div className="rounded-lg border bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-emerald-600" />
+              <span className="text-sm font-semibold">PDF Invitations</span>
+            </div>
+            {templatesLoading ? (
+              <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+            ) : hasPdfTemplate ? (
+              <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600">
+                Template v{pdfTemplate!.version}
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+                No Template
+              </Badge>
+            )}
+          </div>
+
+          {/* Invitation progress bar */}
+          {event.participants > 0 && (
+            <div>
+              <Progress value={invitationPercentage} className="h-1.5" />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>{event.invitations_generated} / {event.participants} generated</span>
+                <span>{invitationPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Template + Generate row */}
+          <div className="flex gap-1.5">
+            {templatesLoading ? (
+              <div className="h-8 flex-1 rounded bg-muted animate-pulse" />
+            ) : hasPdfTemplate ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs px-2"
+                  onClick={() => {
+                    setEditingTemplate(pdfTemplate);
+                    setEditorType("pdf_html");
+                    setEditorOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setPreviewTemplate(pdfTemplate)}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  onClick={() => setDeleteTarget(pdfTemplate)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setEditorType("pdf_html");
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Upload HTML Template
+              </Button>
+            )}
+
+            <div className="flex-1" />
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                      onClick={() => handleInvitationGeneration(event._id)}
+                      disabled={invitationGenerateLoading || event.invitations_generated >= event.participants || !hasPdfTemplate}
+                    >
+                      {invitationGenerateLoading ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Generating…
+                        </>
+                      ) : event.invitations_generated >= event.participants ? (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Generated
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-3 w-3 mr-1" />
+                          Generate PDFs
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!hasPdfTemplate && (
+                  <TooltipContent>
+                    <p>Upload a PDF template first</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
+        {/* ── ID CARDS ── */}
+        <div className="rounded-lg border bg-purple-50/50 dark:bg-purple-950/20 p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <IdCard className="h-4 w-4 text-purple-600" />
+              <span className="text-sm font-semibold">Faculty ID Cards</span>
+            </div>
+          </div>
+
+          {event.faculties > 0 && (
+            <div>
+              <Progress value={idCardsGeneratedPercentage} className="h-1.5" />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>{event.id_card_generated} / {event.faculties} generated</span>
+                <span>{idCardsGeneratedPercentage.toFixed(0)}%</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            className="w-full h-8 text-xs bg-purple-600 hover:bg-purple-700"
+            onClick={async () => await handleIdCardGeneration(event._id)}
+            disabled={idCardGenerateLoading || event.id_card_generated >= event.faculties}
+          >
+            {idCardGenerateLoading ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Generating…
+              </>
+            ) : event.id_card_generated >= event.faculties ? (
+              <>
+                <CheckCircle className="h-3 w-3 mr-1" />
+                ID Cards Generated
+              </>
+            ) : (
+              <>
+                <IdCard className="h-3 w-3 mr-1" />
+                Generate ID Cards
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* ── BOTTOM ACTIONS: Edit Event + Upload User Data ── */}
+        <div className="flex gap-2 pt-3 border-t">
           <Button
             variant="outline"
             className="flex-1"
             onClick={() => onEdit(event._id)}
           >
             <Edit className="mr-2 h-4 w-4" />
-            Edit
+            Edit Event
           </Button>
           <Button
             variant="outline"
@@ -542,53 +840,92 @@ export function EventCard({ event, onEdit }: EventCardProps) {
             }}
           >
             <Upload className="mr-2 h-4 w-4" />
-            Upload
+            Upload User Data
           </Button>
         </div>
-
-        {/* Generate Invitations */}
-        <Button
-          className="w-full"
-          variant="default"
-          onClick={() => handleInvitationGeneration(event._id)}
-          disabled={invitationGenerateLoading || event.invitations_generated >= event.participants}
-        >
-          {invitationGenerateLoading ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <FileText className="mr-2 h-4 w-4" />
-              {event.invitations_generated >= event.participants
-                ? "Invitations Generated"
-                : "Generate Invitations"}
-            </>
-          )}
-        </Button>
-        {/* Generate ID Cards */}
-        <Button
-          className="w-full"
-          variant="default"
-          onClick={async () => await handleIdCardGeneration(event._id)}
-          disabled={idCardGenerateLoading || event.id_card_generated >= event.faculties}
-        >
-          {idCardGenerateLoading ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <IdCard className="mr-2 h-4 w-4" />
-              {event.id_card_generated >= event.faculties
-                ? "ID Cards Generated"
-                : "Generate ID Cards"}
-            </>
-          )}
-        </Button>
       </CardContent>
+
+      {/* Template Editor Modal */}
+      <TemplateEditorModal
+        isOpen={editorOpen}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditingTemplate(null);
+        }}
+        eventId={event._id}
+        template={editingTemplate}
+        defaultType={editorType}
+        onSaved={handleTemplateSaved}
+      />
+
+      {/* Preview Modal */}
+      <Modal
+        open={!!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        size="page"
+      >
+        <ModalHeader>
+          <ModalTitle>{previewTemplate?.name} — Preview</ModalTitle>
+          <ModalDescription>
+            {previewTemplate?.type === "email_html"
+              ? "Email template preview"
+              : "PDF invitation template preview"}
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody>
+          {previewTemplate?.html && (
+            <div className="border rounded-md overflow-hidden bg-white">
+              <iframe
+                srcDoc={previewTemplate.html}
+                className="w-full border-0"
+                style={{ height: previewTemplate?.type === "pdf_html" ? "842px" : "500px" }}
+                title="Template Preview"
+              />
+            </div>
+          )}
+          {previewTemplate && previewTemplate.variables.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <p className="text-sm font-medium text-muted-foreground">Variables</p>
+              <div className="flex flex-wrap gap-1">
+                {previewTemplate.variables.map((v) => (
+                  <Badge
+                    key={v}
+                    variant={previewTemplate.requiredVariables.includes(v) ? "default" : "outline"}
+                    className="text-[10px]"
+                  >
+                    {"{{" + v + "}}"}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setPreviewTemplate(null)}>Close</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        size="sm"
+        closeOnOverlay={!deleting}
+        closeOnEsc={!deleting}
+      >
+        <ModalHeader>
+          <ModalTitle>Delete Template</ModalTitle>
+          <ModalDescription>
+            Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This action cannot be undone.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDeleteTemplate} disabled={deleting}>
+            {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </Card>
   );
 }

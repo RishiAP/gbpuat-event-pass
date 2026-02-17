@@ -9,13 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -89,16 +89,15 @@ export function FileUploadModal() {
   }
 
   return (
-    <Dialog open={isUploading || fileUploadModalStatus} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[525px]">
-        <DialogHeader>
-          <DialogTitle>Upload User Data</DialogTitle>
-          <DialogDescription>
-            Upload a file containing user data for the selected event.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleFileUpload}>
-          <div className="space-y-4 py-4">
+    <Modal open={isUploading || fileUploadModalStatus} onClose={handleClose} size="lg" closeOnOverlay={!isUploading && !isProcessing} closeOnEsc={!isUploading && !isProcessing}>
+      <ModalHeader>
+        <ModalTitle>Upload User Data</ModalTitle>
+        <ModalDescription>
+          Upload a file containing user data for the selected event.
+        </ModalDescription>
+      </ModalHeader>
+      <form onSubmit={handleFileUpload}>
+        <ModalBody className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm">
                 <strong>Event: </strong>
@@ -143,9 +142,9 @@ export function FileUploadModal() {
                 <Progress value={progress} className="w-full" />
               </div>
             )}
-          </div>
+          </ModalBody>
 
-          <DialogFooter>
+          <ModalFooter>
             <Button
               type="button"
               variant="outline"
@@ -164,9 +163,8 @@ export function FileUploadModal() {
                 ? "Processing Data..."
                 : "Upload File"}
             </Button>
-          </DialogFooter>
+          </ModalFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }

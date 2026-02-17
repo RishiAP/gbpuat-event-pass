@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -87,18 +87,17 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
   }
 
   return (
-    <Dialog open={loading || isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{verifier ? "Edit Verifier" : "Add Verifier"}</DialogTitle>
-          <DialogDescription>
-            {verifier 
-              ? "Update the verifier details below." 
-              : "Create a new verifier by filling in the details below."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleFormSubmit}>
-          <div className="space-y-4 py-4">
+    <Modal open={loading || isOpen} onClose={handleClose} size="md" closeOnOverlay={!loading} closeOnEsc={!loading}>
+      <ModalHeader>
+        <ModalTitle>{verifier ? "Edit Verifier" : "Add Verifier"}</ModalTitle>
+        <ModalDescription>
+          {verifier 
+            ? "Update the verifier details below." 
+            : "Create a new verifier by filling in the details below."}
+        </ModalDescription>
+      </ModalHeader>
+      <form onSubmit={handleFormSubmit}>
+        <ModalBody className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -144,9 +143,9 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
                 </button>
               </div>
             </div>
-          </div>
+          </ModalBody>
 
-          <DialogFooter>
+          <ModalFooter>
             <Button
               type="button"
               variant="outline"
@@ -159,9 +158,8 @@ export function VerifierModal({ verifier, isOpen, onClose, onVerifierUpdated }: 
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? (verifier ? "Updating..." : "Adding...") : verifier ? "Update Verifier" : "Add Verifier"}
             </Button>
-          </DialogFooter>
+          </ModalFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 }
