@@ -8,6 +8,8 @@ import { Verifier } from "@/models/Verifier";
 import E from "@/types/Event";
 import { create } from "domain";
 import type { Metadata } from "next";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 Verifier;
 connect();
 
