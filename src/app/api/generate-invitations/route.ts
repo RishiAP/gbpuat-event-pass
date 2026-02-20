@@ -43,12 +43,20 @@ const processUser = async (
     await page.emulateMediaType('screen');
     const userEvent = user.events.get(event_id);
 
+    const verifierName = userEvent?.verifier?.name;
+    const enclosureNo = userEvent?.enclosure_no;
+    const entryGate = userEvent?.entry_gate;
+
+    if (!verifierName || !enclosureNo || !entryGate) {
+      throw new Error('Missing required event fields (verifier, enclosure_no or entry_gate)');
+    }
+
     const invitationHtml = await getInvitationHTML(
       event_id,
       user,
-      userEvent.verifier.name,
-      userEvent.enclosure_no,
-      userEvent.entry_gate
+      verifierName,
+      enclosureNo,
+      entryGate
     );
 
     await page.setContent(
@@ -69,13 +77,17 @@ const processUser = async (
 
     // Determine subfolder for organization
     const subfolder = user.hostel?.name || user.college?.name || undefined;
+    const isStudent = user.college_id !== null && user.college_id !== undefined;
+    const pdfFilename = isStudent
+      ? `${user.name} ${user.college_id} ${user.email}`
+      : `${user.name} ${user.email}`;
 
     // Upload to Cloudinary
     const publicUrl = await uploadPdf(
       Buffer.from(pdfBuffer),
       eventTitle,
       subfolder,
-      user.email
+      pdfFilename
     );
 
     await User.findByIdAndUpdate(user._id, {
@@ -159,6 +171,11 @@ export async function POST(req: NextRequest) {
 
     const unsentUsers = await User.find({
       [`events.${event_id}`]: { $exists: true, $ne: null },
+      [`events.${event_id}.verifier`]: { $exists: true, $ne: null },
+      [`events.${event_id}.enclosure_no`]: { $exists: true, $nin: [null, ''] },
+      [`events.${event_id}.entry_gate`]: { $exists: true, $nin: [null, ''] },
+      name: { $exists: true, $nin: [null, ''] },
+      email: { $exists: true, $nin: [null, ''] },
       $or: [
         { [`events.${event_id}.invitation`]: { $exists: false } },
         { [`events.${event_id}.invitation`]: null },

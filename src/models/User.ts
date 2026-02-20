@@ -4,7 +4,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
     email: string;
     name: string;
-    aadhar: string;
+    aadhaar: string;
     college_id: number|null;
     designation: string|null;
     department: Schema.Types.ObjectId|null;
@@ -26,7 +26,7 @@ const UserSchema = new Schema<IUser>({
         type: String,
         required: true,
     },
-    aadhar: {
+    aadhaar: {
         type: String,
         required: true,
     },

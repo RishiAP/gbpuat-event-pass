@@ -305,7 +305,7 @@ export async function GET(
       _id: 1,
       email: 1,
       name: 1,
-      aadhar: 1,
+      aadhaar: 1,
       college_id: 1,
       designation: 1,
       photo: 1,

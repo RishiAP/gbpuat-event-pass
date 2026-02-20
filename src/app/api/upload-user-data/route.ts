@@ -20,6 +20,32 @@ interface UserEvent {
     email: string;
 }
 
+const REQUIRED_HEADERS = [
+    "email id",
+    "name",
+    "aadhaar no.",
+    "photo",
+    "main gate",
+    "enclosure no.",
+    "entry gate"
+] as const;
+
+const REQUIRED_FIELDS = [
+    "email",
+    "name",
+    "aadhaar",
+    "photo",
+    "verifier",
+    "enclosure_no",
+    "entry_gate"
+] as const;
+
+const sanitizeValue = (value: any): string | null => {
+    if (value === null || value === undefined) return null;
+    const str = String(value).trim();
+    return str === "" ? null : str;
+};
+
 export async function POST(req: NextRequest) {
     try {
         const user = await getUserFromHeader(req, true);
@@ -67,7 +93,7 @@ export async function POST(req: NextRequest) {
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             rows = utils.sheet_to_json(sheet, { header: 1 });
-            rows[0] = rows[0].map((header: string) => header.toString().trim().toLowerCase());
+            rows[0] = rows[0].map((header: string) => sanitizeValue(header)?.toLowerCase() ?? "");
         }
 
         if (rows.length < 2) {
@@ -100,6 +126,14 @@ export async function POST(req: NextRequest) {
         });
 
         const headers = rows[0];
+        const missingHeaders = REQUIRED_HEADERS.filter((header) => !headers.includes(header));
+        if (missingHeaders.length > 0) {
+            return NextResponse.json(
+                { error: `Missing required column(s): ${missingHeaders.join(", ")}` },
+                { status: 400 }
+            );
+        }
+
         const data = rows.slice(1).map((row: any[]) => {
             let rowExist = false;
             row.forEach((r) => (rowExist = rowExist || r != null));
@@ -107,45 +141,55 @@ export async function POST(req: NextRequest) {
 
             const rowData: { [key: string]: any } = {};
             headers.forEach((header: keyof typeof headerToObject, i: number) => {
-                rowData[headerToObject[header]] = row[i] || null;
-                
-                if ((rowData[headerToObject[header]] == null || rowData[headerToObject[header]] === undefined) && (header === "name" || header === "email id" || header === "aadhar no." || header === "main gate" || header==="enclosure no.")) {
-                    return null;
-                }
-                if(headerToObject[header] === "seat_no" || headerToObject[header] === "email" || headerToObject[header] === "enclosure_no")
-                    rowData[headerToObject[header]] = row[i].toString().trim();
+                if (!(header in headerToObject)) return;
 
-                if (headerToObject[header] === "department" && rowData[headerToObject[header]] != null) {
-                    const dept = row[i].toLowerCase().trim().replaceAll("&", "and");
+                const mappedKey = headerToObject[header];
+                const sanitized = sanitizeValue(row[i]);
+                rowData[mappedKey] = sanitized;
+
+                if (mappedKey === "department" && sanitized != null) {
+                    const dept = sanitized.toLowerCase().replaceAll("&", "and");
                     if (departmentMap.has(dept) || (!dept.startsWith("department of") && departmentMap.has("department of " + dept))) {
-                        rowData[headerToObject[header]] = departmentMap.get(dept) || departmentMap.get("department of " + dept);
+                        rowData[mappedKey] = departmentMap.get(dept) || departmentMap.get("department of " + dept);
                     } else {
                         throw new Error(`Invalid department ${row[i]} at row ${rows.indexOf(row) + 1}`);
                     }
-                } else if (headerToObject[header] === "college" && rowData[headerToObject[header]] != null) {
-                    const coll = row[i].toLowerCase().trim().replaceAll("&", "and");
+                } else if (mappedKey === "college_id" && sanitized != null) {
+                    const parsedCollegeId = Number(sanitized);
+                    if (!Number.isFinite(parsedCollegeId)) {
+                        throw new Error(`Invalid college id '${row[i]}' at row ${rows.indexOf(row) + 1}`);
+                    }
+                    rowData[mappedKey] = parsedCollegeId;
+                } else if (mappedKey === "college" && sanitized != null) {
+                    const coll = sanitized.toLowerCase().replaceAll("&", "and");
                     if (collegeMap.has(coll)) {
-                        rowData[headerToObject[header]] = collegeMap.get(coll);
+                        rowData[mappedKey] = collegeMap.get(coll);
                     } else {
                         throw new Error(`Invalid college '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
-                } else if (headerToObject[header] === "verifier") {
-                    const verf = row[i].toLowerCase().trim().replaceAll("&", "and");
+                } else if (mappedKey === "verifier" && sanitized != null) {
+                    const verf = sanitized.toLowerCase().replaceAll("&", "and");
                     if (verifierMap.has(verf)) {
-                        rowData[headerToObject[header]] = verifierMap.get(verf);
+                        rowData[mappedKey] = verifierMap.get(verf);
                     } else {
                         throw new Error(`Invalid verifier '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
-                }else if (headerToObject[header]=="hostel" && rowData[headerToObject[header]]!=null){
-                    const hostel=row[i].toLowerCase().trim().replaceAll("&","and");
+                } else if (mappedKey == "hostel" && sanitized != null) {
+                    const hostel = sanitized.toLowerCase().replaceAll("&", "and");
                     if(hostelMap.has(hostel)){
-                        rowData[headerToObject[header]]=hostelMap.get(hostel);
+                        rowData[mappedKey] = hostelMap.get(hostel);
                     }else{
                         throw new Error(`Invalid hostel '${row[i]}' at row ${rows.indexOf(row) + 1}`);
                     }
                 }
                 
             });
+
+            const missingFields = REQUIRED_FIELDS.filter((field) => rowData[field] == null);
+            if (missingFields.length > 0) {
+                throw new Error(`Missing required value(s) ${missingFields.join(", ")} at row ${rows.indexOf(row) + 1}`);
+            }
+
             return rowData;
         }).filter((row) => row != null);
 
@@ -160,7 +204,7 @@ export async function POST(req: NextRequest) {
                         department: user.department,
                         college: user.college,
                         photo: user.photo,
-                        aadhar: user.aadhar,
+                        aadhaar: user.aadhaar,
                         designation: user.designation,
                         [`events.${event_id}.status`]: false,
                         [`events.${event_id}.seat_no`]: user.seat_no,

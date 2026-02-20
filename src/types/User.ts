@@ -5,7 +5,7 @@ export default interface User{
     _id: string;
     email: string;
     name: string;
-    aadhar: string;
+    aadhaar: string;
     college_id: number|null;
     designation: string|null;
     department: Department|null;

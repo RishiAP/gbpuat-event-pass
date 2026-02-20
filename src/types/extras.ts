@@ -1,7 +1,7 @@
 export enum headerToObject{
     "email id"="email",
     "name"="name",
-    "aadhar no."="aadhar",
+    "aadhaar no."="aadhaar",
     "college id no."="college_id",
     "designation"="designation",
     "department"="department",

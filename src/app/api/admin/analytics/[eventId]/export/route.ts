@@ -19,7 +19,7 @@ Verifier;
 const EXPORT_FIELDS: Record<string, { label: string; value: (row: any) => any }> = {
   name: { label: 'Name', value: (u) => u.name || '' },
   email: { label: 'Email', value: (u) => u.email || '' },
-  aadhar: { label: 'Aadhar', value: (u) => u.aadhar || '' },
+  aadhaar: { label: 'Aadhaar', value: (u) => u.aadhaar || '' },
   college_id: { label: 'College ID', value: (u) => u.college_id || '' },
   designation: { label: 'Designation', value: (u) => u.designation || '' },
   department: { label: 'Department', value: (u) => u.department?.name || '' },
@@ -216,10 +216,10 @@ export async function GET(
     // Build dynamic projection only for requested columns & fields needed for formatting.
     const projectStage: any = { };
     // Base scalar fields
-    if (selectedFields.some(f => ['name','email','aadhar','college_id','designation','createdAt'].includes(f))) {
+    if (selectedFields.some(f => ['name','email','aadhaar','college_id','designation','createdAt'].includes(f))) {
       if (selectedFields.includes('name')) projectStage.name = 1;
       if (selectedFields.includes('email')) projectStage.email = 1;
-      if (selectedFields.includes('aadhar')) projectStage.aadhar = 1;
+      if (selectedFields.includes('aadhaar')) projectStage.aadhaar = 1;
       if (selectedFields.includes('college_id')) projectStage.college_id = 1;
       if (selectedFields.includes('designation')) projectStage.designation = 1;
       if (selectedFields.includes('createdAt')) projectStage.createdAt = 1;

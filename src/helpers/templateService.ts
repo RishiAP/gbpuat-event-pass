@@ -197,7 +197,7 @@ const DEFAULT_PHOTO =
 /**
  * Build flat variable map for invitation PDF templates.
  * Available variables: {{qr_token}}, {{qr_url}}, {{photo}}, {{user_name}},
- * {{email}}, {{aadhar}}, {{verifier}}, {{entry_gate}}, {{enclosure_no}},
+ * {{email}}, {{aadhaar}}, {{verifier}}, {{entry_gate}}, {{enclosure_no}},
  * {{college_id}}, {{hostel_name}}, {{designation}}, {{department_name}},
  * {{college_name}}, {{is_student}},
  * {{event_title}}, {{event_date}}, {{event_time}}, {{venue}}
@@ -234,7 +234,7 @@ function buildInvitationVariables(
     String(process.env.JWT_USER_QR_SECRET)
   );
 
-  const isStudent = Boolean(user.college_id);
+  const isStudent = user.college_id !== null && user.college_id !== undefined;
 
   // Dynamic date / time from event
   const eventDate = event?.date ? new Date(event.date) : new Date();
@@ -245,7 +245,7 @@ function buildInvitationVariables(
     photo: user.photo ?? DEFAULT_PHOTO,
     user_name: user.name || "N/A",
     email: user.email || "N/A",
-    aadhar: user.aadhar || "N/A",
+    aadhaar: user.aadhaar || "N/A",
     verifier: verifier || "N/A",
     entry_gate: entry_gate || "N/A",
     enclosure_no: enclosure_no || "N/A",

@@ -31,7 +31,7 @@ const CONFIG = {
 export default interface UserType {
   email: string;
   name: string;
-  aadhar: string;
+  aadhaar: string;
   college_id: number | null;
   designation: string | null;
   department: Department | null;

@@ -146,10 +146,10 @@ const UserCard: React.FC<UserCardProps> = ({
               <span className="font-medium wrap-break-words">{user.college_id}</span>
             </>
           )}
-          {user.aadhar && (
+          {user.aadhaar && (
             <>
-              <span className="text-muted-foreground">Aadhar</span>
-              <span className="font-mono tabular-nums wrap-break-words">{user.aadhar}</span>
+              <span className="text-muted-foreground">Aadhaar</span>
+              <span className="font-mono tabular-nums wrap-break-words">{user.aadhaar}</span>
             </>
           )}
           {user.hostel && (
